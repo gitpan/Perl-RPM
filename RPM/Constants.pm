@@ -5,7 +5,7 @@
 #
 ###############################################################################
 #
-#   $Id: Constants.pm,v 1.3 2000/06/22 08:42:00 rjray Exp $
+#   $Id: Constants.pm,v 1.5 2000/08/07 09:33:08 rjray Exp $
 #
 #   Description:    Constants for the RPM package
 #
@@ -26,8 +26,8 @@ use RPM;
 
 @ISA = qw(Exporter);
 
-$VERSION = $RPM::VERSION;
-$revision = do { my @r=(q$Revision: 1.3 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+$VERSION = '0.27';
+$revision = do { my @r=(q$Revision: 1.5 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 @EXPORT_OK = qw(
                 ADD_SIGNATURE
@@ -167,7 +167,6 @@ $revision = do { my @r=(q$Revision: 1.3 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 RPMTAG_DIRINDEXES
                 RPMTAG_DIRNAMES
                 RPMTAG_DISTRIBUTION
-                RPMTAG_EPOCH
                 RPMTAG_EXCLUDEARCH
                 RPMTAG_EXCLUDEOS
                 RPMTAG_EXCLUSIVEARCH
@@ -215,7 +214,6 @@ $revision = do { my @r=(q$Revision: 1.3 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 RPMTAG_REQUIREFLAGS
                 RPMTAG_REQUIRENAME
                 RPMTAG_REQUIREVERSION
-                RPMTAG_ROOT
                 RPMTAG_RPMVERSION
                 RPMTAG_SIZE
                 RPMTAG_SOURCE
@@ -350,55 +348,72 @@ constants was 232), the constants are broken up into several smaller groups:
 =head2 Header Tag Identifiers
 
 The following symbols may be imported via the tag B<:rpmtag>, and represent
-the various elements that may be present in a package header:
+the various elements that may be present in a package header. When used to
+retrieve data from a header as a hash key, the C<RPMTAG_> portion should be
+omitted from the name. Use the full name only when referring to the constant.
+Note that each name is followed by either a C<$> or a C<@>. This signifies
+the return type of the data; a scalar or an array reference. In all cases, a
+failed operation is noted by a return value of C<undef>.
+
+The majority of the tags that return list references in fact refer to the
+ordered list of files present in the C<BASENAMES> tag. In these cases (such
+as C<MD5SUMS>), the value of the array at a given point may be null if it
+is not relevant. That is because the C<BASENAMES> array (and thus all other
+file-related lists) must accomodate the indices at which a directory name is
+specified for the sake of defining the directory. In such cases, values such
+as size or MD5 checksum have no direct relevance.
 
 =over
 
-=item RPMTAG_ARCH
+=item RPMTAG_ARCH ($)
 
 Name of the architecture that the package was built for. If the package
 is architecture-independant, the value should read "noarch".
 
-=item RPMTAG_ARCHIVESIZE
+=item RPMTAG_ARCHIVESIZE ($)
 
 Size of the archive portion of the file (total file size minus header data).
 
-=item RPMTAG_BASENAMES
+=item RPMTAG_BASENAMES (@)
 
 A list of the base (leaf) names of the files contained within the package.
 These are combined with the values from B<RPMTAG_DIRNAMES> using a mapping
 provided by B<RPMTAG_DIRINDEXES>.
 
-=item RPMTAG_BUILDARCHS
+This is actually a very key tag within a header. Many of the list-returning
+tags documented further down maintain a one-to-one correlation with the
+elements in this array.
+
+=item RPMTAG_BUILDARCHS (@)
 
 Not documented yet.
 
-=item RPMTAG_BUILDHOST
+=item RPMTAG_BUILDHOST ($)
 
 Name of the host the package was built on.
 
-=item RPMTAG_BUILDMACROS
+=item RPMTAG_BUILDMACROS (@)
 
 Not documented yet.
 
-=item RPMTAG_BUILDROOT
+=item RPMTAG_BUILDROOT ($)
 
 Specifies the root at which the package is built.
 
-=item RPMTAG_BUILDTIME
+=item RPMTAG_BUILDTIME ($)
 
 The time/date when the package was created, expressed as a C<time()> value
 (seconds since the epoch).
 
-=item RPMTAG_CAPABILITY
+=item RPMTAG_CAPABILITY (@)
 
 Not certain. See the B<RPMTAG_PROVIDE*> and B<RPMTAG_REQUIRE*> groups.
 
-=item RPMTAG_CHANGELOGNAME
+=item RPMTAG_CHANGELOGNAME (@)
 
-=item RPMTAG_CHANGELOGTEXT
+=item RPMTAG_CHANGELOGTEXT (@)
 
-=item RPMTAG_CHANGELOGTIME
+=item RPMTAG_CHANGELOGTIME (@)
 
 These three items should be taken together. Each should have the same number
 of items, and the items at corresponding indices should be taken together.
@@ -406,11 +421,11 @@ Taken this way, they provide a small-scale changelog for the package, detailing
 the name of the person making the entry, the text of the entry and the time
 of the entry, in the respective order given above.
 
-=item RPMTAG_CONFLICTFLAGS
+=item RPMTAG_CONFLICTFLAGS (@)
 
-=item RPMTAG_CONFLICTNAME
+=item RPMTAG_CONFLICTNAME (@)
 
-=item RPMTAG_CONFLICTVERSION
+=item RPMTAG_CONFLICTVERSION (@)
 
 These three items are used in conjunction to specify packages and/or
 individual files which the package itself would conflict with. Of the three,
@@ -420,17 +435,17 @@ the array.  The other two wil have the same number of elements, though some
 elements that the package obsoletes, those the package provides and those
 the package requires (see below).
 
-=item RPMTAG_COOKIE
+=item RPMTAG_COOKIE ($)
 
 A simple tag, a single text string, added at the time the RPM is created.
 Generally, it is created from the hostname on which the package is built
 and the UNIX C<time()> value at the time of packaging.
 
-=item RPMTAG_DESCRIPTION
+=item RPMTAG_DESCRIPTION ($)
 
 A textual description of the package.
 
-=item RPMTAG_DIRINDEXES
+=item RPMTAG_DIRINDEXES (@)
 
 This data should have a one-to-one correspondance with B<RPMTAG_BASENAMES>,
 above. Each item here is a numerical index into the list of directories named
@@ -438,139 +453,150 @@ in B<RPMTAG_DIRNAMES> below. It indicates which of the directories is to be
 prepended to the corresponding base file name in order to create the full
 pathname.
 
-=item RPMTAG_DIRNAMES
+=item RPMTAG_DIRNAMES (@)
 
 This is a list of all directories into which the package would install files.
 This list is used with B<RPMTAG_BASENAMES> to create full paths, indexed by
 way of B<RPMTAG_DIRINDEXES> above.
 
-=item RPMTAG_DISTRIBUTION
+=item RPMTAG_DISTRIBUTION ($)
+
+A text label identifying the name given to the overall larger distribution
+the package itself is a part of.
+
+=item RPMTAG_EXCLUDEARCH ($)
 
 Not documented yet.
 
-=item RPMTAG_EPOCH
+=item RPMTAG_EXCLUDEOS ($)
 
 Not documented yet.
 
-=item RPMTAG_EXCLUDEARCH
+=item RPMTAG_EXCLUSIVEARCH ($)
 
 Not documented yet.
 
-=item RPMTAG_EXCLUDEOS
+=item RPMTAG_EXCLUSIVEOS ($)
 
 Not documented yet.
 
-=item RPMTAG_EXCLUSIVEARCH
+=item RPMTAG_FILEDEVICES (@)
 
-Not documented yet.
+The integer device values (from the B<stat> system call) for each file in
+the package.
 
-=item RPMTAG_EXCLUSIVEOS
+=item RPMTAG_FILEFLAGS (@)
 
-Not documented yet.
+A bit-field with zero or more of the flags defined below under the heading
+of I<rpmfile>. See the flags themselves for more detail.
 
-=item RPMTAG_FILEDEVICES
-
-Not documented yet.
-
-=item RPMTAG_FILEFLAGS
-
-Not documented yet.
-
-=item RPMTAG_FILEGROUPNAME
+=item RPMTAG_FILEGROUPNAME (@)
 
 A string-array data field that contains the group ID (by name) that should
 be used for setting group ownership of the files contained in the package.
 There should be a one-to-one correspondance between this list and the list of
 files in C<RPMTAG_BASENAMES>. See also C<RPMTAG_USERNAME>.
 
-=item RPMTAG_FILEINODES
+=item RPMTAG_FILEINODES (@)
 
-Not documented yet.
+The C<inode> (from the B<stat> system call) that each file in
+the package had on the system on which the package was built.
 
-=item RPMTAG_FILELANGS
+=item RPMTAG_FILELANGS (@)
 
-Not documented yet.
+Used to specify language-specific files, which may then be marked for skipping
+based on the list of accepted languages at install-time.
 
-=item RPMTAG_FILELINKTOS
+=item RPMTAG_FILELINKTOS (@)
 
-Not documented yet.
+A list of names with exactly as many elements as there are filenames; each
+slot in this list is either empty, or (if not) gives the name of a file that
+the current filename should be made as a symbolic link to.
 
-=item RPMTAG_FILEMD5S
+=item RPMTAG_FILEMD5S (@)
 
-Not documented yet.
+MD5 checksums for each file in the package.
 
-=item RPMTAG_FILEMODES
+=item RPMTAG_FILEMODES (@)
 
-Not documented yet.
+The file-modes as integer values, for each file in the package.
 
-=item RPMTAG_FILEMTIMES
+=item RPMTAG_FILEMTIMES (@)
 
-Not documented yet.
+The integer modification-time (from the B<stat> system call) for each file in
+the package.
 
-=item RPMTAG_FILERDEVS
+=item RPMTAG_FILERDEVS (@)
 
-Not documented yet.
+The integer C<rdev> values (from the B<stat> system call) for each file in
+the package.
 
-=item RPMTAG_FILESIZES
+=item RPMTAG_FILESIZES (@)
 
-Not documented yet.
+The size (in bytes) of each file in the package.
 
-=item RPMTAG_FILESTATES
+=item RPMTAG_FILESTATES (@)
 
-Not documented yet.
+A list of file-state information for each file in the package. References
+the constants defined below under the heading of C<rpmfile_states>.
 
-=item RPMTAG_FILEUSERNAME
+=item RPMTAG_FILEUSERNAME (@)
 
 A string-array data field that contains the user ID (by name) that should
 be used for setting ownership of the files contained in the package. There
 should be a one-to-one correspondance between this list and the list of
 files in C<RPMTAG_BASENAMES>. See also C<RPMTAG_GROUPNAME>.
 
-=item RPMTAG_FILEVERIFYFLAGS
+=item RPMTAG_FILEVERIFYFLAGS (@)
 
-Not documented yet.
+A list of flags (implemented as a bit-field within an integer) for each file
+in the archive, specifying what should be checked during the verification
+stage. See the B<RPMVERIFY_*> constants below.
 
-=item RPMTAG_GIF
+=item RPMTAG_GIF ($)
 
 Not directly used by the B<rpm> library. Likely intended to hold a GIF
 image that external software could make use of. See C<RPMTAG_XPM> below.
 
-=item RPMTAG_GROUP
+=item RPMTAG_GROUP ($)
 
 A one-line text string that places the package within the overall hierarchy
 of packages, using a UNIX-style format of denoting level with forward-slash
 characters (C</>). Most packages will have at least two elements separated by
 one such slash, though more are possible (as is a top-level name).
 
-=item RPMTAG_ICON
+=item RPMTAG_ICON ($)
 
 Not directly used by the B<rpm> library. Likely intended to hold an image
 of some neutral format that external software could make use of.
 See C<RPMTAG_XPM> below and C<RPMTAG_GIF> above.
 
-=item RPMTAG_INSTALLTIME
+=item RPMTAG_INSTALLTIME ($)
 
-Not documented yet.
+The time at which the package was installed on your system. Should only be
+present in header objects from the database, not from uninstalled packages.
 
-=item RPMTAG_INSTPREFIXES
+=item RPMTAG_INSTPREFIXES (@)
 
-Not documented yet.
+Specifies one or more prefixes that are set to the environment variables,
+C<RPM_INSTALL_PREFIX{n}>, where C<{n}> is a number starting from zero. These
+are set before executing any of the scripts (pre- or post-install, or verify).
 
-=item RPMTAG_LICENSE
+=item RPMTAG_LICENSE ($)
 
 The license and/or restrictions under which the package is distributed.
 
-=item RPMTAG_NAME
+=item RPMTAG_NAME ($)
 
 The name of the package. This is the first part of a triple used to uniquely
 identify a given package. It is used in conjunction with B<RPMTAG_VERSION>
 and B<RPMTAG_RELEASE>, in that order.
 
-=item RPMTAG_OBSOLETEFLAGS
+=item RPMTAG_OBSOLETEFLAGS (@)
 
-=item RPMTAG_OBSOLETENAME
+=item RPMTAG_OBSOLETENAME (@)
 
-=item RPMTAG_OBSOLETEVERSION
+=item RPMTAG_OBSOLETEVERSION (@)
 
 These three items are used in conjunction to specify packages and/or
 individual files which the package itself obsoletes. Of the three, only
@@ -580,59 +606,59 @@ may be null. This is the same approach as is used to specify the elements
 that the package conflicts with, those the package provides and those the
 package requires (see below).
 
-=item RPMTAG_OS
+=item RPMTAG_OS ($)
 
 The name of the O/S for which the package is intended.
 
-=item RPMTAG_PACKAGER
+=item RPMTAG_PACKAGER ($)
 
 Name of the group/company/individual who built the package.
 
-=item RPMTAG_PATCH
+=item RPMTAG_PATCH (@)
 
 Not documented yet.
 
-=item RPMTAG_POSTIN
+=item RPMTAG_POSTIN (@)
+
+Post-installation scripts, each entry in the list holds the text for a full
+script.
+
+=item RPMTAG_POSTINPROG (@)
+
+The program (and additional arguments) for executing post-installation scripts.
+The default is B</bin/sh> with no arguments. This is much like the C argv/argc
+pair, in that list subscript 0 represents the program itself while the
+remaining list items (if any) are arguments to the program.
+
+=item RPMTAG_POSTUN (@)
+
+Post-uninstallation scripts, again with one full script per array item.
+
+=item RPMTAG_POSTUNPROG (@)
+
+Specification of the program to run post-uninstallation scripts. See
+B<RPMTAG_POSTINPROG>.
+
+=item RPMTAG_PREFIXES (@)
 
 Not documented yet.
 
-=item RPMTAG_POSTINPROG
+=item RPMTAG_PREIN (@)
 
-Not documented yet.
+=item RPMTAG_PREINPROG (@)
 
-=item RPMTAG_POSTUN
+=item RPMTAG_PREUN (@)
 
-Not documented yet.
+=item RPMTAG_PREUNPROG (@)
 
-=item RPMTAG_POSTUNPROG
+Specification of the scripts and commands to use in executing them, for
+pre-installation and pre-uninstallation. See the B<RPMTAG_POST*> set above.
 
-Not documented yet.
+=item RPMTAG_PROVIDEFLAGS (@)
 
-=item RPMTAG_PREFIXES
+=item RPMTAG_PROVIDENAME (@)
 
-Not documented yet.
-
-=item RPMTAG_PREIN
-
-Not documented yet.
-
-=item RPMTAG_PREINPROG
-
-Not documented yet.
-
-=item RPMTAG_PREUN
-
-Not documented yet.
-
-=item RPMTAG_PREUNPROG
-
-Not documented yet.
-
-=item RPMTAG_PROVIDEFLAGS
-
-=item RPMTAG_PROVIDENAME
-
-=item RPMTAG_PROVIDEVERSION
+=item RPMTAG_PROVIDEVERSION (@)
 
 These three items are used in conjunction to specify the specific files that
 the package itself provides to other packages as possible dependancies. Of the
@@ -641,17 +667,17 @@ of the array.  The other two wil have the same number of elements, though
 some (or most) may be null. This three-part specification is also used to
 itemize dependancies (see below) and obsoletions (see above).
 
-=item RPMTAG_RELEASE
+=item RPMTAG_RELEASE ($)
 
 The release part of the identifying triple for a package. This is combined
 with the B<RPMTAG_NAME> and B<RPMTAG_VERSION> tags to create a unique
 identification for each package.
 
-=item RPMTAG_REQUIREFLAGS
+=item RPMTAG_REQUIREFLAGS (@)
 
-=item RPMTAG_REQUIRENAME
+=item RPMTAG_REQUIRENAME (@)
 
-=item RPMTAG_REQUIREVERSION
+=item RPMTAG_REQUIREVERSION (@)
 
 These three items are used in conjunction to specify packages and/or
 individual files on which the package itself depends. Of the three, only
@@ -660,85 +686,81 @@ The other two wil have the same number of elements, though some (or most)
 may be null. This is the same approach as is used to specify the elements
 that the package provides and those the package obsoletes (see above).
 
-=item RPMTAG_ROOT
-
-Not documented yet.
-
-=item RPMTAG_RPMVERSION
+=item RPMTAG_RPMVERSION ($)
 
 The version of B<rpm> used when bundling the package.
 
-=item RPMTAG_SIZE
+=item RPMTAG_SIZE ($)
 
 Total size of the package, when existant as a disk file.
 
-=item RPMTAG_SOURCE
+=item RPMTAG_SOURCE ($)
 
 An integer value that should be treated as a boolean, true (1) if the package
 is a source-RPM (SRPM) and false (0) if it is not. Generally, if it is not a
 source-RPM then this tag will simply not be present on the header.
 
-=item RPMTAG_SOURCERPM
+=item RPMTAG_SOURCERPM ($)
 
 The source-RPM (SRPM) file used to build this package. If the file being
 queried is itself a source-RPM, this tag will be non-existent or null in
 value.
 
-=item RPMTAG_SUMMARY
+=item RPMTAG_SUMMARY ($)
 
 A one line summary description of the package.
 
-=item RPMTAG_TRIGGERCONDS
+=item RPMTAG_TRIGGERCONDS (@)
 
 Not documented yet.
 
-=item RPMTAG_TRIGGERFLAGS
+=item RPMTAG_TRIGGERFLAGS (@)
 
 Not documented yet.
 
-=item RPMTAG_TRIGGERINDEX
+=item RPMTAG_TRIGGERINDEX (@)
 
 Not documented yet.
 
-=item RPMTAG_TRIGGERNAME
+=item RPMTAG_TRIGGERNAME (@)
 
 Not documented yet.
 
-=item RPMTAG_TRIGGERSCRIPTPROG
+=item RPMTAG_TRIGGERSCRIPTPROG (@)
 
 Not documented yet.
 
-=item RPMTAG_TRIGGERSCRIPTS
+=item RPMTAG_TRIGGERSCRIPTS (@)
 
 Not documented yet.
 
-=item RPMTAG_TRIGGERVERSION
+=item RPMTAG_TRIGGERVERSION (@)
 
 Not documented yet.
 
-=item RPMTAG_URL
+=item RPMTAG_URL ($)
 
 A Uniform Resource Locator (generally a WWW page) for the vendor/individual
 or for the software project itself.
 
-=item RPMTAG_VENDOR
+=item RPMTAG_VENDOR ($)
 
 An alternate identifier for the company that created and provided the package.
 
-=item RPMTAG_VERIFYSCRIPT
+=item RPMTAG_VERIFYSCRIPT (@)
 
 Not documented yet.
 
-=item RPMTAG_VERIFYSCRIPTPROG
+=item RPMTAG_VERIFYSCRIPTPROG (@)
 
 Not documented yet.
 
-=item RPMTAG_VERSION
+=item RPMTAG_VERSION ($)
 
 The package version, the second part (with B<RPMTAG_NAME> and
 B<RPMTAG_RELEASE>) of the triple used to uniquely identify packages.
 
-=item RPMTAG_XPM
+=item RPMTAG_XPM ($)
 
 Not directly used by the B<rpm> library. Likely intended to hold an XPM
 image that external software could make use of. See C<RPMTAG_GIF> above.
@@ -1047,6 +1069,78 @@ Not documented yet.
 
 =back
 
+=head2 File-Verification Flags
+
+The values in the B<RPMTAG_FILEVERIFYFLAGS> list defined in the header-tags
+section earlier represent various combinations of the following values.
+
+=over
+
+=item RPMVERIFY_ALL
+
+A full mask that will match any tested C<RPMVERIFY_*> value
+(except B<RPMVERIFY_NONE>).
+
+=item RPMVERIFY_NONE
+
+An empty mask that will not match any tested verification flags.
+
+=item RPMVERIFY_FILESIZE
+
+Test the file size against the value in the header.
+
+=item RPMVERIFY_GROUP
+
+Test the file group ID against the value it should have been set to.
+
+=item RPMVERIFY_LINKTO
+
+If the file was to be a symbolic link, check that it is set correctly.
+
+=item RPMVERIFY_MD5
+
+Check the MD5 checksum for the file.
+
+=item RPMVERIFY_MODE
+
+Verify the file mode against the value it was to be set to.
+
+=item RPMVERIFY_MTIME
+
+Check the file modification-time against that which it should have been set.
+
+=item RPMVERIFY_RDEV
+
+Check the device field of the inode, if relevant.
+
+=item RPMVERIFY_USER
+
+Check the user ID to which ownership was set.
+
+=back
+
+When the verification of a given file fails, the return value contains the
+relevant bits from the values above, corresponding to what test(s) failed.
+In addition, any of the following may be set to indicate a larger problem:
+
+=over
+
+=item RPMVERIFY_LSTATFAIL
+
+The attempt to read the inode information via C<lstat()> was not successful.
+This will guarantee that other bits in the return value are set, as well.
+
+=item RPMVERIFY_READFAIL
+
+The attempt to read the file or its data (for the sake of MD5, etc.) failed.
+
+=item RPMVERIFY_READLINKFAIL
+
+An attempt to do a C<readlink()> on the file, expected to be a symbolic link,
+failed.
+
+=back
+
 =head2 Not Yet Defined
 
 =over
@@ -1272,58 +1366,6 @@ Not documented yet.
 Not documented yet.
 
 =item RPMTRANS_FLAG_TEST
-
-Not documented yet.
-
-=item RPMVERIFY_ALL
-
-Not documented yet.
-
-=item RPMVERIFY_FILESIZE
-
-Not documented yet.
-
-=item RPMVERIFY_GROUP
-
-Not documented yet.
-
-=item RPMVERIFY_LINKTO
-
-Not documented yet.
-
-=item RPMVERIFY_LSTATFAIL
-
-Not documented yet.
-
-=item RPMVERIFY_MD5
-
-Not documented yet.
-
-=item RPMVERIFY_MODE
-
-Not documented yet.
-
-=item RPMVERIFY_MTIME
-
-Not documented yet.
-
-=item RPMVERIFY_NONE
-
-Not documented yet.
-
-=item RPMVERIFY_RDEV
-
-Not documented yet.
-
-=item RPMVERIFY_READFAIL
-
-Not documented yet.
-
-=item RPMVERIFY_READLINKFAIL
-
-Not documented yet.
-
-=item RPMVERIFY_USER
 
 Not documented yet.
 

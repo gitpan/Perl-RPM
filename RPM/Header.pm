@@ -5,7 +5,7 @@
 #
 ###############################################################################
 #
-#   $Id: Header.pm,v 1.6 2000/06/22 08:42:00 rjray Exp $
+#   $Id: Header.pm,v 1.9 2000/08/08 07:02:06 rjray Exp $
 #
 #   Description:    The RPM::Header class provides access to the RPM Header
 #                   structure as a tied hash, allowing direct access to the
@@ -34,8 +34,8 @@ use RPM;
 use RPM::Error;
 use RPM::Constants ':rpmerr';
 
-$VERSION = $RPM::VERSION;
-$revision = do { my @r=(q$Revision: 1.6 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+$VERSION = '0.27';
+$revision = do { my @r=(q$Revision: 1.9 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 1;
 
@@ -47,6 +47,47 @@ sub new
     tie %hash, $class, @_;
     return (tied %hash);
 }
+
+###############################################################################
+#
+#   Sub Name:       filenames
+#
+#   Description:    Glue together the contents of BASENAMES, DIRNAMES and
+#                   DIRINDEXES to create a single list of fully-qualified
+#                   filenames
+#
+#   Arguments:      NAME      IN/OUT  TYPE      DESCRIPTION
+#                   $self     in      ref       Object of this class
+#
+#   Globals:        None.
+#
+#   Environment:    None.
+#
+#   Returns:        Success:    listref
+#                   Failure:    undef
+#
+###############################################################################
+sub filenames
+{
+    my $self = shift;
+
+    # Each of these three fetches will have already triggered rpm_error, were
+    # there any problems.
+    my $base = $self->{BASENAMES}  || return undef;
+    my $dirs = $self->{DIRNAMES}   || return undef;
+    my $idxs = $self->{DIRINDEXES} || return undef;
+
+    unless (@$base == @$idxs)
+    {
+        rpm_error(RPMERR_INTERNAL,
+                  "Mis-matched elements lists for BASENAMES and DIRINDEXES");
+        return undef;
+    }
+
+    # The value from DIRNAMES already has the trailing separator
+    [ map { "$dirs->[$idxs->[$_]]$base->[$_]" } (0 .. $#$base) ];
+}
+
 
 __END__
 
@@ -74,13 +115,16 @@ them via C<keys> or C<each> returns the tags in the order in which they
 appear in the header. Keys may be requested without regard for letter case,
 but they are always returned as all upper-case.
 
-The return value corresponding to each key is a list reference (or C<undef>
-if the key is not valid). This is due to the fact that any of the tags may
-have more than one piece of data associated, and the C<FETCH> interface to
-hashes presumes scalar calling context and return value. Thus, rather than
-require developers to frequently test the return value as a reference or
-not, the value is simple always returned as a list ref, even if there is only
-one element.
+The return value corresponding to each key is a list reference or scalar
+(or C<undef> if the key is not valid), depending on the data-type of the
+key. Each of the header tags are noted with one of C<$> or C<@> in the
+B<RPM::Constants> documentation. The C<defined> keyword should be used
+for testing success versus failure, as empty tags are possible. See the
+C<scalar_tag> test, below.
+
+This is a significant change from versions prior to 0.27, in which the
+return value was always a list reference. This new approach brings
+B<RPM::Header> more in line with other interfaces to B<rpm> header information.
 
 B<RPM::Header> objects are also the native return value from keys retrieved
 in the B<RPM::Database> class (see L<RPM::Database>). In these cases, the
@@ -115,6 +159,15 @@ hash reference, it can be used to call these methods via:
 
 =over
 
+=item filenames
+
+The B<RPM> system attempts to save space by splitting up the file paths into
+the leafs (stored by the tag C<BASENAMES>), the directories (stored under
+C<DIRNAMES>) and indexes into the list of directories (stored under
+C<DIRINDEXES>). As a convenience, this method re-assembles the list of
+filenames and returns it as a list reference. If an error occurs, C<undef>
+will be returned after C<rpm_error> has been called.
+
 =item is_source
 
 Returns true (1) or false (0), depending on whether the package the header
@@ -125,6 +178,14 @@ object is derived from is a source RPM.
 Return the size of the header, in bytes, within the disk file containing the
 associated package. The value is also returned for those headers within the
 database.
+
+=item scalar_tag(TAG)
+
+Returns a true/false value (1 or 0) based on whether the value returned by
+the specified tag is a scalar or an array reference. Useful in place of
+using C<ref> to test the fetched values. B<TAG> may be either a string (name)
+or a number (imported from the B<RPM::Constants> tag C<:rpmtag>). This
+method may be called as a class (static) method.
 
 =item tagtype(TAG)
 
@@ -179,8 +240,6 @@ stored within the header.
 
 =back
 
-=back
-
 =item NVR
 
 The commonly-needed data triple of (B<name>, B<version>, B<release>) may be
@@ -198,6 +257,8 @@ established behavior of other comparison operators (C<cmp> and C<E<lt>=E<gt>>);
 passed argument. A value of 1 indicates that the calling object is greater,
 or newer, than the argument. A value of 0 indicates that they are equal.
 
+=back
+
 =head1 DIAGNOSTICS
 
 Direct binding to the internal error-management of B<rpm> is still under
@@ -211,7 +272,7 @@ subject to change in future releases.
 
 =head1 SEE ALSO
 
-L<RPM>, L<RPM::Database>, L<perl>, L<rpm>
+L<RPM>, L<RPM::Database>, L<RPM::Constants>, L<perl>, L<rpm>
 
 =head1 AUTHOR
 

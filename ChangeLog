@@ -184,3 +184,30 @@ Revision history for Perl extension RPM.
 	It's still leaking RPM::Header objects in the RPM::Database routines.
 	The alternative is a nasty mix of "attempt to free unreferenced
 	scalar" errors and core dumps.
+
+0.30	Wed Mar  7 22:13:40 PST 2001
+	- tenth alpha
+
+	Much of the leakage of RPM::Header objects is now gone, due mostly to
+	changing the prototype of rpmdb_FETCH to returning a SV* instead of
+	a RPM::Header reference. The various class DESTROY methods seem to be
+	getting called in the correct order, now.
+
+	Caught a case in the RPM::Header class where attempting to reference
+	an element of a non-existent tag would trigger auto-vivification on
+	that key, which in turn was leading to some bad calls being made to
+	the rpmlib routines.
+
+	Re-did the av-assignment in rpmhdr_create. This should save on SV*
+	creation, though it might not have been a leak. Still, this method
+	is more efficient overall.
+
+	Newer versions of rpm 4.0 tickled a bug in which a database offset
+	value might get sent in without being initialized first. This was
+	caught and fixed. Also related to the 3.0/4.0 rift, some variables
+	only used for 3.0.X are now declared within #ifdef's to defeat 'unused'
+	warnings.
+
+	The current state of the module will be released to allow for use by
+	other parties, without the wait for any ongoing development milestones
+	on my part.

@@ -1,6 +1,6 @@
 #!/bin/perl
 
-# $Id: Makefile.PL,v 1.16 2000/11/14 06:19:10 rjray Exp $
+# $Id: Makefile.PL,v 1.19 2001/03/08 06:12:32 rjray Exp $
 
 use Config;
 use ExtUtils::MakeMaker;
@@ -95,10 +95,9 @@ WriteMakefile(
               XS           => \%XS,
               EXE_FILES    => [ @SAMPLES ],
               OBJECT       => $OBJECT,
-              INC          => "-Wunused -I. -I$rpm_libdir",
-              XSOPT        => '-nolinenumbers',
+              INC          => "-I. -I$rpm_libdir",
               DIR          => [],
-#             XSOPT        => '-nolinenumbers',
+#              XSOPT        => '-nolinenumbers',
               dist         => { COMPRESS => 'gzip -9f' },
               clean        => { FILES => $CLEAN }
              );
@@ -228,9 +227,6 @@ BuildRoot: %{_tmppath}/%{name}-root
 Native Bindings to the RPM API for Perl 5.005 and later. Uses a combination
 of Perl and C/XS (compiled) code to provide access to the RPM database,
 headers of installed packages, and more.
-
-# Provide perl-specific find-requires.
-%define __find_requires /usr/lib/rpm/find-requires.perl
 
 %prep
 %setup -q -n SPEC_DISTNAME-%{version} 

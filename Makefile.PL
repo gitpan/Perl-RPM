@@ -1,6 +1,6 @@
 #!/bin/perl
 
-# $Id: Makefile.PL,v 1.13 2000/10/13 08:42:32 rjray Exp $
+# $Id: Makefile.PL,v 1.16 2000/11/14 06:19:10 rjray Exp $
 
 use Config;
 use ExtUtils::MakeMaker;
@@ -95,8 +95,10 @@ WriteMakefile(
               XS           => \%XS,
               EXE_FILES    => [ @SAMPLES ],
               OBJECT       => $OBJECT,
-              INC          => "-I. -I$rpm_libdir",
+              INC          => "-Wunused -I. -I$rpm_libdir",
+              XSOPT        => '-nolinenumbers',
               DIR          => [],
+#             XSOPT        => '-nolinenumbers',
               dist         => { COMPRESS => 'gzip -9f' },
               clean        => { FILES => $CLEAN }
              );
@@ -213,7 +215,7 @@ Name: SPEC_DISTNAME
 Version: SPEC_VERSION
 Release: SPEC_RELEASE
 Vendor: Randy J. Ray
-Copyright: distributable
+Copyright: Artistic
 Group: Applications/CPAN
 Source: SPEC_DISTNAME-SPEC_VERSION.tar.gz
 Url: http://www.blackperl.com/SPEC_DISTNAME

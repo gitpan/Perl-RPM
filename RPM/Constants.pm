@@ -5,7 +5,7 @@
 #
 ###############################################################################
 #
-#   $Id: Constants.pm,v 1.9 2000/08/18 08:23:43 rjray Exp $
+#   $Id: Constants.pm,v 1.11 2000/10/05 04:48:59 rjray Exp $
 #
 #   Description:    Constants for the RPM package
 #
@@ -26,8 +26,8 @@ use RPM;
 
 @ISA = qw(Exporter);
 
-$VERSION = '0.28';
-$revision = do { my @r=(q$Revision: 1.9 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+$VERSION = '0.29';
+$revision = do { my @r=(q$Revision: 1.11 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 @EXPORT_OK = qw(
                 ADD_SIGNATURE
@@ -375,7 +375,10 @@ is architecture-independant, the value should read "noarch".
 
 =item RPMTAG_ARCHIVESIZE ($)
 
-Size of the archive portion of the file (total file size minus header data).
+Size of the archive portion of the file. B<RPM> stores the archive portion
+of a (non-source) package as a B<cpio> archive, which may also be compressed
+internally. Thus, this value is generally larger than the file size of the
+C<RPM> file itself.
 
 =item RPMTAG_BASENAMES (@)
 
@@ -719,7 +722,7 @@ The version of B<rpm> used when bundling the package.
 
 =item RPMTAG_SIZE ($)
 
-Total size of the package, when existant as a disk file.
+Total size of the package contents, the sum of individual file sizes.
 
 =item RPMTAG_SOURCE (@)
 
@@ -834,8 +837,9 @@ entry (in the B<TRIGGERNAME> list) with a particular script from the
 B<TRIGGERSCRIPTS> list. This is to optimize storage, as the likelihood exists
 that a given script may be re-used for more than one trigger.
 
-The tags C<RPMTAG_TRIGGERNAME>, C<RPMTAG_TRIGGERVERSION>, C<RPMTAG_TRIGGERFLAGS>
-and C<RPMTAG_TRIGGERINDEX> must all have the same number of elements.
+The tags C<RPMTAG_TRIGGERNAME>, C<RPMTAG_TRIGGERVERSION>,
+C<RPMTAG_TRIGGERFLAGS> and C<RPMTAG_TRIGGERINDEX> must all have the same
+number of elements.
 
 =head2 Dependancy Sense Flags
 
@@ -1239,6 +1243,16 @@ The following tags may be imported via the B<:rpmfile> specifier. They are
 used to express various characteristics of files in the archive, based on the
 value from B<RPMTAG_FILEFLAGS> that corresponds to a given file.
 
+=over
+
+=item RPMFILE_CONFIG
+
+Not documented yet.
+
+=item RPMFILE_DOC
+
+Not documented yet.
+
 =item RPMFILE_DONOTUSE
 
 Not documented yet.
@@ -1349,14 +1363,6 @@ Not documented yet.
 Not documented yet.
 
 =item QUERY_FOR_STATE
-
-Not documented yet.
-
-=item RPMFILE_CONFIG
-
-Not documented yet.
-
-=item RPMFILE_DOC
 
 Not documented yet.
 

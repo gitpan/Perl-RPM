@@ -4,7 +4,7 @@
 
 #include "RPM.h"
 
-static char * const rcsid = "$Id: Header.xs,v 1.15 2000/08/18 08:25:39 rjray Exp $";
+static char * const rcsid = "$Id: Header.xs,v 1.17 2000/10/05 04:48:59 rjray Exp $";
 static int scalar_tag(pTHX_ SV *, int);
 
 /*
@@ -237,7 +237,7 @@ RPM__Header rpmhdr_TIEHASH(pTHX_ SV* class, SV* source, int flags)
 
     hdr_struct = safemalloc(sizeof(RPM_Header));
     Zero(hdr_struct, 1, RPM_Header);
-    TIEHASH = (RPM__Header)0;
+    TIEHASH = Null(RPM__Header);
 
     if (! source)
         hdr_struct->hdr = headerNew();
@@ -680,15 +680,20 @@ int rpmhdr_STORE(pTHX_ RPM__Header self, SV* key, SV* value)
             char** data_p;
             char* str_sv;
             char* str_new;
+            SV* cloned;
             STRLEN len;
 
             if (data_type == RPM_STRING_TYPE && size == 1)
             {
                 /* Special case for exactly one RPM_STRING_TYPE */
                 svp = av_fetch(a_value, 0, FALSE);
-                if (svp && SvPOK(*svp))
+                if (svp)
                 {
-                    str_sv = SvPV(*svp, len);
+                    if (SvPOK(*svp))
+                        cloned = *svp;
+                    else
+                        cloned = sv_mortalcopy(*svp);
+                    str_sv = SvPV(cloned, len);
                     str_new = safemalloc(len + 1);
                     strncpy(str_new, str_sv, len + 1);
                 }
@@ -704,8 +709,12 @@ int rpmhdr_STORE(pTHX_ RPM__Header self, SV* key, SV* value)
                 for (i = 0; i < size; i++)
                 {
                     svp = av_fetch(a_value, i, FALSE);
-                    if (svp && SvPOK(*svp))
+                    if (svp)
                     {
+                        if (SvPOK(*svp))
+                            cloned = *svp;
+                        else
+                            cloned = sv_mortalcopy(*svp);
                         str_sv = SvPV(*svp, len);
                         str_new = safemalloc(len + 1);
                         strncpy(str_new, str_sv, len + 1);
@@ -901,6 +910,8 @@ void rpmhdr_DESTROY(pTHX_ RPM__Header self)
         headerFreeIterator(hdr->iterator);
     if (hdr->hdr)
         headerFree(hdr->hdr);
+
+    hv_undef(self);
 }
 
 unsigned int rpmhdr_size(pTHX_ RPM__Header self)

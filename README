@@ -1,6 +1,6 @@
 Perl-RPM - Native bindings to the RPM Package Manager API for Perl
 
-Version 0.32 (alpha twelve)
+Version 0.40 (alpha thirteen)
 
 
 WHAT IS IT
@@ -49,10 +49,9 @@ There is now a mailing list for Perl-RPM. For details, see:
 
 CHANGES
 
-This is the twelfth release. For detailed changes, see the file ChangeLog.
-The main focus of this release is to address some lingering unreferenced-scalar
-warning messages. This is in preparation for moving the CVS repository to
-the one used for the rpm project itself.
+This is the thirteenth release. For detailed changes, see the file ChangeLog.
+This release includes many patches from users, and signifies a move to cease
+support for versions of rpm prior to 4.0.3.
 
 
 LICENSE

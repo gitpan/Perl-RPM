@@ -8,13 +8,7 @@
 #  define RPMERR_READERROR RPMERR_READ
 #endif
 
-#if (RPM_VERSION >= 0x040002)
-#  define HDR_ITER_CONST const
-#else
-#  define HDR_ITER_CONST
-#endif
-
-static char * const rcsid = "$Id: Header.xs,v 1.24 2001/05/15 06:22:36 rjray Exp $";
+static char * const rcsid = "$Id: Header.xs,v 1.26 2002/05/10 07:37:08 rjray Exp $";
 static int scalar_tag(pTHX_ SV *, int);
 
 /*
@@ -256,7 +250,7 @@ static int new_from_fname(pTHX_ const char* source, RPM_Header* new_hdr)
     if ((retval = new_from_fd_t(fd, new_hdr)))
     {
         Fclose(fd);
-        new_hdr->source_name = safemalloc(strlen(source) + 1);
+        New(0, new_hdr->source_name, strlen(source) + 1, char);
         strcpy(new_hdr->source_name, source);
     }
 
@@ -271,8 +265,7 @@ RPM__Header rpmhdr_TIEHASH(pTHX_ char* class, SV* source, int flags)
     RPM_Header* retvalp; /* Use this to store the actual C-level data */
     SV* t_magic;  
 
-    retvalp = new_RPM_storage(RPM_Header);
-    Zero(retvalp, 1, RPM_Header);
+    Newz(0, retvalp, 1, RPM_Header);
     RETVAL = Nullhv;
 
     if (! source)
@@ -361,7 +354,7 @@ SV* rpmhdr_FETCH(pTHX_ RPM__Header self, SV* key,
     if (! (name && (namelen = strlen(name))))
         return FETCH;
 
-    uc_name = safemalloc(namelen + 3);
+    New(0, uc_name, namelen+3, char);
     for (i = 0; i < namelen; i++)
         uc_name[i] = toUPPER(name[i]);
     uc_name[i] = '\0';
@@ -459,7 +452,7 @@ int rpmhdr_STORE(pTHX_ RPM__Header self, SV* key, SV* value)
     if (! (name && (namelen = strlen(name))))
         return 0;
 
-    uc_name = safemalloc(namelen + 3);
+    New(0, uc_name, namelen+3, char);
     for (i = 0; i < namelen; i++)
         uc_name[i] = toUPPER(name[i]);
     uc_name[i] = '\0';
@@ -736,7 +729,7 @@ int rpmhdr_STORE(pTHX_ RPM__Header self, SV* key, SV* value)
                     else
                         cloned = sv_mortalcopy(*svp);
                     str_sv = SvPV(cloned, len);
-                    str_new = safemalloc(len + 1);
+                    New(0, str_new, len+1, char);
                     strncpy(str_new, str_sv, len + 1);
                 }
                 else
@@ -758,7 +751,7 @@ int rpmhdr_STORE(pTHX_ RPM__Header self, SV* key, SV* value)
                         else
                             cloned = sv_mortalcopy(*svp);
                         str_sv = SvPV(*svp, len);
-                        str_new = safemalloc(len + 1);
+                        New(0, str_new, len+1, char);
                         strncpy(str_new, str_sv, len + 1);
                         data_p[i] = str_new;
                     }
@@ -804,7 +797,7 @@ int rpmhdr_DELETE(pTHX_ RPM__Header self, SV* key)
     if (! (name && (namelen = strlen(name))))
         return 0;
 
-    uc_name = safemalloc(namelen + 3);
+    New(0, uc_name, namelen+3, char);
     for (i = 0; i < namelen; i++)
         uc_name[i] = toUPPER(name[i]);
     uc_name[i] = '\0';
@@ -852,7 +845,7 @@ bool rpmhdr_EXISTS(pTHX_ RPM__Header self, SV* key)
         return 0;
 
     /* Unlike FETCH, there will be no need for the KEY_t string */
-    uc_name = safemalloc(namelen + 1);
+    New(0, uc_name, namelen+1, char);
     for (i = 0; i < namelen; i++)
         uc_name[i] = toUPPER(name[i]);
     uc_name[i] = '\0';
@@ -892,17 +885,21 @@ int rpmhdr_FIRSTKEY(pTHX_ RPM__Header self, SV** key, SV** value)
         return 0;
 
     /* Run once to get started */
-    headerNextIterator(hdr->iterator,
-                       Null(int *), Null(int *),
-                       Null(HDR_ITER_CONST void **),
-                       Null(int *));
-    /* Now run it once, to get the first header entry */
-    if (! headerNextIterator(hdr->iterator, &tag, &type,
-                             (HDR_ITER_CONST void **)&ptr,
-                             &size))
-        return 0;
+    headerNextIterator(hdr->iterator, Null(int *), Null(int *),
+                       Null(const void **), Null(int *));
+    while (1)
+    {
+        /* Run it to get the header entry */
+        if (! headerNextIterator(hdr->iterator, &tag, &type,
+                                 (const void **)&ptr, &size))
+            return 0;
 
-    tagname = num2tag(aTHX_ tag);
+        tagname = num2tag(aTHX_ tag);
+        /* If the one we've just gotten is null, loop */
+        if (tagname != Nullch)
+            break;
+    }
+
     *key = newSVpv((char *)tagname, strlen(tagname));
     *value = rpmhdr_FETCH(aTHX_ self, *key, ptr, type, size);
 
@@ -928,7 +925,7 @@ int rpmhdr_NEXTKEY(pTHX_ RPM__Header self, SV* key,
     {
         /* Run it once, to get the next header entry */
         if (! headerNextIterator(hdr->iterator, &tag, &type,
-                                 (HDR_ITER_CONST void **)&ptr, &size))
+                                 (const void **)&ptr, &size))
             /* Last tag. Inform perl that iteration is over. */
             return 0;
 
@@ -957,6 +954,8 @@ void rpmhdr_DESTROY(pTHX_ RPM__Header self)
         headerFree(hdr->hdr);
 
     hv_undef(hdr->storage);
+    if (hdr->source_name)
+        Safefree(hdr->source_name);
     Safefree(hdr);
     hv_undef(self);
 }
@@ -988,7 +987,7 @@ int rpmhdr_tagtype(pTHX_ RPM__Header self, SV* key)
     if (! (name && (namelen = strlen(name))))
         return RPM_NULL_TYPE;
 
-    uc_name = safemalloc(namelen + 3);
+    New(0, uc_name, namelen+3, char);
     for (i = 0; i < namelen; i++)
         uc_name[i] = toUPPER(name[i]);
     uc_name[i] = '\0';
@@ -1372,7 +1371,7 @@ rpmhdr_scalar_tag(self, tag)
             RETVAL = 0;
         else
         {
-            uc_name = safemalloc(namelen + 1);
+            New(0, uc_name, namelen+1, char);
             for (i = 0; i < namelen; i++)
                 uc_name[i] = toUPPER(name[i]);
             uc_name[i] = '\0';

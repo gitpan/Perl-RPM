@@ -4,15 +4,9 @@
 
 #include "RPM.h"
 
-static char * const rcsid = "$Id: Error.xs,v 1.3 2001/05/12 11:40:27 rjray Exp $";
+static char * const rcsid = "$Id: Error.xs,v 1.5 2002/05/10 07:38:21 rjray Exp $";
 
 static CV* err_callback;
-
-#if (RPM_VERSION >= 0x040002)
-#  define ERR_STR_CONST const
-#else
-#  define ERR_STR_CONST
-#endif
 
 /*
   This was static, but it needs to be accessible from other modules, as well.
@@ -29,13 +23,13 @@ static void rpm_catch_errors(void)
        our thread context here */
     dTHX;
     int error_code;
-    ERR_STR_CONST char* error_string;
+    const char* error_string;
 
     error_code = rpmErrorCode();
     error_string = rpmErrorString();
 
     /* Set the string part, first */
-    sv_setsv(rpm_errSV, newSVpv(error_string, strlen(error_string)));
+    sv_setsv(rpm_errSV, newSVpv((char*)error_string, strlen(error_string)));
     /* Set the IV part */
     sv_setiv(rpm_errSV, error_code);
     /* Doing that didn't erase the PV part, but it cleared the flag: */
@@ -50,7 +44,7 @@ static void rpm_catch_errors(void)
         SAVETMPS;
         PUSHMARK(sp);
         XPUSHs(sv_2mortal(newSViv(error_code)));
-        XPUSHs(sv_2mortal(newSVpv(error_string, strlen(error_string))));
+        XPUSHs(sv_2mortal(newSVpv((char*)error_string, strlen(error_string))));
         PUTBACK;
 
         /* The actual call */

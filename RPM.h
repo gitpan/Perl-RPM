@@ -1,5 +1,5 @@
 /*
- * $Id: RPM.h,v 1.14 2001/02/27 07:34:00 rjray Exp $
+ * $Id: RPM.h,v 1.19 2002/05/10 05:50:19 rjray Exp $
  *
  * Various C-specific decls/includes/etc. for the RPM linkage
  */
@@ -40,11 +40,8 @@
 #    define newSVpvn(a,b)       newSVpv(a,b)
 #endif
 
-#include <rpm/rpmlib.h>
-#if RPM_MAJOR < 4
-#  include <rpm/header.h>
-#  include <rpm/dbindex.h>
-#endif
+#include <rpmcli.h>
+#include <rpmlib.h>
 
 /* Various flags. For now, one nybble for header and one for package. */
 #define RPM_HEADER_MASK        0x0f
@@ -77,8 +74,6 @@
             (header) = Null(type *); \
     }
 
-#define new_RPM_storage(type) (type *)safemalloc(sizeof(type))
-
 /*
  *    Perl complement: RPM::Database
  */
@@ -91,13 +86,9 @@
 typedef struct {
     rpmdb dbp;
     int current_rec;
-#if RPM_MAJOR < 4
-    dbiIndexSet* index_set;
-#else
     int noffs;
     int offx;
     int* offsets;
-#endif
     /* This HV will be used to cache key/value pairs to avoid re-computing */
     HV* storage;
 } RPM_Database;
@@ -144,8 +135,8 @@ typedef HV* RPM__Header;
 /*
   This is the underlying struct that implements the interface to the RPM
   packages. As above, we need the actual object to be a hash, so the struct
-  will be stored as an SV on the same sort of special key as RPM__Database
-  and RPM__Header use.
+  will be stored as an SV on the same sort of special key as RPM__Database and
+  RPM__Header use.
 */
 
 typedef struct {

@@ -5,7 +5,7 @@
 #
 ###############################################################################
 #
-#   $Id: Constants.pm,v 1.5 2000/08/07 09:33:08 rjray Exp $
+#   $Id: Constants.pm,v 1.9 2000/08/18 08:23:43 rjray Exp $
 #
 #   Description:    Constants for the RPM package
 #
@@ -26,8 +26,8 @@ use RPM;
 
 @ISA = qw(Exporter);
 
-$VERSION = '0.27';
-$revision = do { my @r=(q$Revision: 1.5 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+$VERSION = '0.28';
+$revision = do { my @r=(q$Revision: 1.9 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 @EXPORT_OK = qw(
                 ADD_SIGNATURE
@@ -162,6 +162,7 @@ $revision = do { my @r=(q$Revision: 1.5 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 RPMTAG_CONFLICTFLAGS
                 RPMTAG_CONFLICTNAME
                 RPMTAG_CONFLICTVERSION
+                RPMTAG_COPYRIGHT
                 RPMTAG_COOKIE
                 RPMTAG_DESCRIPTION
                 RPMTAG_DIRINDEXES
@@ -191,6 +192,8 @@ $revision = do { my @r=(q$Revision: 1.5 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 RPMTAG_INSTALLTIME
                 RPMTAG_INSTPREFIXES
                 RPMTAG_LICENSE
+                RPMTAG_NOPATCH
+                RPMTAG_NOSOURCE
                 RPMTAG_NAME
                 RPMTAG_OBSOLETEFLAGS
                 RPMTAG_OBSOLETENAME
@@ -308,7 +311,7 @@ sub AUTOLOAD {
     my $constname;
     ($constname = $AUTOLOAD) =~ s/.*:://;
     die "& not defined" if $constname eq 'constant';
-    my $val = constant($constname, @_ ? $_[0] : 0);
+    my $val = constant($constname);
     if ($! != 0) {
         if ($! =~ /Invalid/) {
             $AutoLoader::AUTOLOAD = $AUTOLOAD;
@@ -386,7 +389,10 @@ elements in this array.
 
 =item RPMTAG_BUILDARCHS (@)
 
-Not documented yet.
+Not entirely sure. Appears from source code examples to be a list of those
+architectures for which a package should be built. All examples from the set
+of SRPMs in Red Hat Linux 6.2 only use this tag when the only value is
+C<noarch>.
 
 =item RPMTAG_BUILDHOST ($)
 
@@ -394,7 +400,8 @@ Name of the host the package was built on.
 
 =item RPMTAG_BUILDMACROS (@)
 
-Not documented yet.
+This does not seem to be used in the library. It may be present for future
+expansion use.
 
 =item RPMTAG_BUILDROOT ($)
 
@@ -404,10 +411,6 @@ Specifies the root at which the package is built.
 
 The time/date when the package was created, expressed as a C<time()> value
 (seconds since the epoch).
-
-=item RPMTAG_CAPABILITY (@)
-
-Not certain. See the B<RPMTAG_PROVIDE*> and B<RPMTAG_REQUIRE*> groups.
 
 =item RPMTAG_CHANGELOGNAME (@)
 
@@ -430,10 +433,15 @@ of the entry, in the respective order given above.
 These three items are used in conjunction to specify packages and/or
 individual files which the package itself would conflict with. Of the three,
 only B<RPMTAG_CONFLICTNAME> is required to have data in all elements of
-the array.  The other two wil have the same number of elements, though some
+the array.  The other two will have the same number of elements, though some
 (or most) may be null. This is the same approach as is used to specify the
 elements that the package obsoletes, those the package provides and those
-the package requires (see below).
+the package requires (see L<"Three-Part Linkage"> below).
+
+=item RPMTAG_COPYRIGHT
+
+Maintained by RPM for backwards-compatibility with some older packages. It
+is the same as C<RPMTAG_LICENSE>.
 
 =item RPMTAG_COOKIE ($)
 
@@ -464,21 +472,21 @@ way of B<RPMTAG_DIRINDEXES> above.
 A text label identifying the name given to the overall larger distribution
 the package itself is a part of.
 
-=item RPMTAG_EXCLUDEARCH ($)
+=item RPMTAG_EXCLUDEARCH (@)
 
-Not documented yet.
+A list of architectures for which the package should not be built.
 
-=item RPMTAG_EXCLUDEOS ($)
+=item RPMTAG_EXCLUDEOS (@)
 
-Not documented yet.
+A list of operating systems for which the package should not be built.
 
-=item RPMTAG_EXCLUSIVEARCH ($)
+=item RPMTAG_EXCLUSIVEARCH (@)
 
-Not documented yet.
+A list of architectures only for which the package should be built.
 
-=item RPMTAG_EXCLUSIVEOS ($)
+=item RPMTAG_EXCLUSIVEOS (@)
 
-Not documented yet.
+A list of operating systems only for which the package should be built.
 
 =item RPMTAG_FILEDEVICES (@)
 
@@ -555,8 +563,8 @@ stage. See the B<RPMVERIFY_*> constants below.
 
 =item RPMTAG_GIF ($)
 
-Not directly used by the B<rpm> library. Likely intended to hold a GIF
-image that external software could make use of. See C<RPMTAG_XPM> below.
+Similar to B<RPMTAG_ICON> defined below, with the restriction that the file
+specified should in fact be a GIF image.
 
 =item RPMTAG_GROUP ($)
 
@@ -567,8 +575,8 @@ one such slash, though more are possible (as is a top-level name).
 
 =item RPMTAG_ICON ($)
 
-Not directly used by the B<rpm> library. Likely intended to hold an image
-of some neutral format that external software could make use of.
+Specifies a file within a source-RPM (SRPM) that should be treated as an icon
+(of either GIF or XPM format), for potential use by GUI-based RPM tools.
 See C<RPMTAG_XPM> below and C<RPMTAG_GIF> above.
 
 =item RPMTAG_INSTALLTIME ($)
@@ -592,6 +600,17 @@ The name of the package. This is the first part of a triple used to uniquely
 identify a given package. It is used in conjunction with B<RPMTAG_VERSION>
 and B<RPMTAG_RELEASE>, in that order.
 
+=item RPMTAG_NOPATCH (@)
+
+=item RPMTAG_NOSOURCE (@)
+
+These are used to list elements that should not be included in the resulting
+SRPM when it is built from a spec-file. The lists provided by the B<SOURCE>
+and B<PATCH> tags provide all elements as itemized in the spec-file. However,
+if either of these tags are also present, then some elements may not actually
+exist in the package. Both of these refer to entries in the corresponding
+list of names by numberical index (starting at 0).
+
 =item RPMTAG_OBSOLETEFLAGS (@)
 
 =item RPMTAG_OBSOLETENAME (@)
@@ -601,10 +620,10 @@ and B<RPMTAG_RELEASE>, in that order.
 These three items are used in conjunction to specify packages and/or
 individual files which the package itself obsoletes. Of the three, only
 B<RPMTAG_OBSOLETENAME> is required to have data in all elements of the array.
-The other two wil have the same number of elements, though some (or most)
+The other two will have the same number of elements, though some (or most)
 may be null. This is the same approach as is used to specify the elements
 that the package conflicts with, those the package provides and those the
-package requires (see below).
+package requires (see L<"Three-Part Linkage"> below).
 
 =item RPMTAG_OS ($)
 
@@ -616,7 +635,10 @@ Name of the group/company/individual who built the package.
 
 =item RPMTAG_PATCH (@)
 
-Not documented yet.
+A list of patch files (see L<patch>) that will be applied to the source tree
+when building the package from a source-RPM (SRPM). These files are part of
+the bundle in the SRPM. All patch files listed in the original spec are listed
+here, even if some were excluded by the B<NOPATCH> tag defined earlier.
 
 =item RPMTAG_POSTIN (@)
 
@@ -641,7 +663,11 @@ B<RPMTAG_POSTINPROG>.
 
 =item RPMTAG_PREFIXES (@)
 
-Not documented yet.
+The list of directory prefixes under which files are (or will be) installed.
+This differs from the B<DIRNAMES> tag in that it is used to specify the parts
+of the filesystem affected. Thus, it is generally a shorter list and the
+elements are more basic (three directories under C</usr> in B<DIRNAMES> will
+only warrant a mention of C</usr> in this tag).
 
 =item RPMTAG_PREIN (@)
 
@@ -663,9 +689,9 @@ pre-installation and pre-uninstallation. See the B<RPMTAG_POST*> set above.
 These three items are used in conjunction to specify the specific files that
 the package itself provides to other packages as possible dependancies. Of the
 three, only B<RPMTAG_PROVIDENAME> is required to have data in all elements
-of the array.  The other two wil have the same number of elements, though
+of the array.  The other two will have the same number of elements, though
 some (or most) may be null. This three-part specification is also used to
-itemize dependancies (see below) and obsoletions (see above).
+itemize dependancies and obsoletions (see L<"Three-Part Linkage">).
 
 =item RPMTAG_RELEASE ($)
 
@@ -682,9 +708,10 @@ identification for each package.
 These three items are used in conjunction to specify packages and/or
 individual files on which the package itself depends. Of the three, only
 B<RPMTAG_REQUIRENAME> is required to have data in all elements of the array.
-The other two wil have the same number of elements, though some (or most)
+The other two will have the same number of elements, though some (or most)
 may be null. This is the same approach as is used to specify the elements
-that the package provides and those the package obsoletes (see above).
+that the package provides and those the package obsoletes (see
+L<"Three-Part Linkage">).
 
 =item RPMTAG_RPMVERSION ($)
 
@@ -694,11 +721,12 @@ The version of B<rpm> used when bundling the package.
 
 Total size of the package, when existant as a disk file.
 
-=item RPMTAG_SOURCE ($)
+=item RPMTAG_SOURCE (@)
 
-An integer value that should be treated as a boolean, true (1) if the package
-is a source-RPM (SRPM) and false (0) if it is not. Generally, if it is not a
-source-RPM then this tag will simply not be present on the header.
+A list of the source files that are present in the SRPM package. All files
+listed here will be placed in the relevant C<SOURCES> directory when building
+from this SRPM. All source files listed in the original spec are listed here,
+even if some were excluded by the B<NOSOURCE> tag defined earlier.
 
 =item RPMTAG_SOURCERPM ($)
 
@@ -712,31 +740,21 @@ A one line summary description of the package.
 
 =item RPMTAG_TRIGGERCONDS (@)
 
-Not documented yet.
-
 =item RPMTAG_TRIGGERFLAGS (@)
-
-Not documented yet.
 
 =item RPMTAG_TRIGGERINDEX (@)
 
-Not documented yet.
-
 =item RPMTAG_TRIGGERNAME (@)
-
-Not documented yet.
 
 =item RPMTAG_TRIGGERSCRIPTPROG (@)
 
-Not documented yet.
-
 =item RPMTAG_TRIGGERSCRIPTS (@)
-
-Not documented yet.
 
 =item RPMTAG_TRIGGERVERSION (@)
 
-Not documented yet.
+These items are all taken together to manage the trigger functionality and
+mechanism of the RPM package. This is covered in greater depth in a later
+section (see L<"The Trigger Specifications">).
 
 =item RPMTAG_URL ($)
 
@@ -749,11 +767,13 @@ An alternate identifier for the company that created and provided the package.
 
 =item RPMTAG_VERIFYSCRIPT (@)
 
-Not documented yet.
+Scripts to be run during the verification stage. As with other script-providing
+tags, each array element contains one full script.
 
 =item RPMTAG_VERIFYSCRIPTPROG (@)
 
-Not documented yet.
+The program (and arguments) that is to be used in executing the verification
+scripts. If absent or empty, C</bin/sh> with no arguments is used.
 
 =item RPMTAG_VERSION ($)
 
@@ -762,8 +782,109 @@ B<RPMTAG_RELEASE>) of the triple used to uniquely identify packages.
 
 =item RPMTAG_XPM ($)
 
-Not directly used by the B<rpm> library. Likely intended to hold an XPM
-image that external software could make use of. See C<RPMTAG_GIF> above.
+The name of a file in the SRPM that may be used as an icon by a GUI-based
+tool. This differs from B<RPMTAG_ICON> above in that it implies that the file
+is specifically a XPM format image.
+
+=back
+
+=head2 Three-Part Linkage
+
+There are several groupings of tags that are used to specify a linkage of
+some sort, often external in nature. These triple-tags consist of a list of
+textual names, a list of corresponding versions and a list of flag fields.
+Of the three, only the list of names is required to have data in every
+element. The other two lists will have the same number of elements, however.
+The version values are only applied when the corresponding name refers to
+another RPM package.
+
+When a version is specified, the corresponding package may need to be
+logically equal to, less than (older than) or greater (newer) than the
+version as specified. This is signified in the corresponding flags field
+for the triple. The flags documented later (see L<"Dependancy Sense Flags">)
+can be used to determine the specific relationship.
+
+=head2 The Trigger Specifications
+
+The concept of trigger scripts was added into RPM from version 3.0 onwards.
+It provides a powerful and flexible (if delicate and tricky) mechanism by
+which packages may be sensitive to the installation, un-installation or
+upgrade of other packages. In C<RPM::Header> terms, triggers are managed
+through a combination of seven different header tags.
+
+Firstly, the tags C<RPMTAG_TRIGGERSCRIPTS> and C<RPMTAG_TRIGGERSCRIPTPROG>
+behave in the same fashion as similar tags for other script specifications.
+All the triggers are stored on the B<TRIGGERSCRIPTS> tag, with each script
+stored as one contiguous string. The B<TRIGGERSCRIPTPROG> array will specify
+the program (and optional additional arguments) if the program is anything
+other than C</bin/sh> (with no arguments).
+
+The C<RPMTAG_TRIGGERNAME> and C<RPMTAG_TRIGGERVERSION> lists are used to
+specify the packages that a given trigger is sensitive to. The name refers
+to the package name (as RPM knows it to be), while the version (if specified)
+further narrows the dependancy. The C<RPMTAG_TRIGGERCONDS> tag appears to be
+present for future use, but the C<RPMTAG_TRIGGERFLAGS> is used as similarly-
+named tags are for other script specifiers. In addition to the usual relative
+comparison flags, these will also have some trigger-specific flags that
+identify the trigger as being attached to an install, un-install or upgrade.
+See L<"Dependancy Sense Flags">.
+
+Lastly, the C<RPMTAG_TRIGGERINDEX> list is used to associate a given trigger
+entry (in the B<TRIGGERNAME> list) with a particular script from the
+B<TRIGGERSCRIPTS> list. This is to optimize storage, as the likelihood exists
+that a given script may be re-used for more than one trigger.
+
+The tags C<RPMTAG_TRIGGERNAME>, C<RPMTAG_TRIGGERVERSION>, C<RPMTAG_TRIGGERFLAGS>
+and C<RPMTAG_TRIGGERINDEX> must all have the same number of elements.
+
+=head2 Dependancy Sense Flags
+
+The following values may be imported via the tag B<:rpmsense>, and are
+used with the flags values from various triple-tag combinations, to establish
+the nature of the requirement relationship. In the paragraphs below, The C<*>
+refers to any of B<REQUIRE>, B<OBSOLETE>, B<PROVIDE> or B<CONFLICT>. The
+trigger-related flags have different uses than the rest of the B<:rpmsense>
+set, though they may also make use of the flags for version comparison.
+
+=over
+
+=item RPMSENSE_SENSEMASK
+
+This is a mask that, when applied to a value from B<RPMTAG_*FLAGS>,
+masks out all bits except for the following three values:
+
+=item RPMSENSE_EQUAL
+
+=item RPMSENSE_GREATER
+
+=item RPMSENSE_LESS
+
+These values are used to check the corresponding entries from
+B<RPMTAG_*NAME> and B<RPMTAG_*VERSION>, and specify whether
+the existing file should be of a version equal to, greater than or less than
+the version specified. More than one flag may be present.
+
+=item RPMSENSE_PREREQ
+
+The corresponding item from B<RPMTAG_*NAME> is a simple pre-requisite,
+generally without specific version checking.
+
+=item RPMSENSE_TRIGGER
+
+A mask value that will isolate the trigger flags below from any other data
+in the flag field.
+
+=item RPMSENSE_TRIGGERIN
+
+The corresponding trigger is an installation trigger.
+
+=item RPMSENSE_TRIGGERUN
+
+The corresponding trigger is an uninstallation trigger.
+
+=item RPMSENSE_TRIGGERPOSTUN
+
+The corresponding trigger is a post-uninstallation trigger.
 
 =back
 
@@ -822,264 +943,235 @@ as possibly occuring:
 
 =item RPMERR_BADARG
 
-Not documented yet.
+This is the most common error type used within the Perl RPM bindings. It is
+used here to indicate bad or missing data in method calls.
 
 =item RPMERR_BADDEV
 
-Not documented yet.
+Signaled when a file in the contents list is a bad or unknown device type.
 
 =item RPMERR_BADFILENAME
 
-Not documented yet.
+This error signifies that RPM was unable to generate a filename, or that a
+filename that RPM tried to use led to an error.
 
 =item RPMERR_BADMAGIC
 
-Not documented yet.
+Signaled whenever an attempt to read the lead-in of the header (the "file magic"
+information) fails. May be due either to bad data in that part, or an I/O
+failure in reading the data itself.
 
 =item RPMERR_BADRELOCATE
 
-Not documented yet.
+An error with the relocation specifications in the spec file.
 
 =item RPMERR_BADSIGTYPE
 
-Not documented yet.
+Signals that an older, obsoleted style of signature was detected.
 
 =item RPMERR_BADSPEC
 
-Not documented yet.
+General errors in the parsing or processing of the spec file.
 
 =item RPMERR_CHOWN
 
-Not documented yet.
+An error occured in using the B<chown> system call.
 
 =item RPMERR_CPIO
 
-Not documented yet.
+Errors that may occur when using B<cpio> to either package or unpack the source.
 
 =item RPMERR_CREATE
 
-Not documented yet.
+This is signaled when RPM cannot create a directory or file.
 
 =item RPMERR_DBCORRUPT
 
-Not documented yet.
+Signaled for consistency errors found in the database.
 
 =item RPMERR_DBGETINDEX
 
-Not documented yet.
+This error represents a failure to read a requested header record from the
+database.
 
 =item RPMERR_DBOPEN
 
-Not documented yet.
+An error when opening some component of the database.
 
 =item RPMERR_DBPUTINDEX
 
-Not documented yet.
+This error signals a failure to either store or remove a specified entry into
+(or from) the database.
 
 =item RPMERR_EXEC
 
-Not documented yet.
+An error occured when executing a sub-command (such as B<pgp>).
 
 =item RPMERR_FILECONFLICT
 
-Not documented yet.
+A file conflict (not otherwise caught or handled by B<rpm> itself) was detected.
 
 =item RPMERR_FLOCK
 
-Not documented yet.
+A failure to obtain a lock on the database. When the RPM library opens the
+database it places an exclusive lock on it. As such, there cannot be two
+processes (or two B<RPM::Database> instances) accessing the database at one
+time.
 
 =item RPMERR_FORK
 
-Not documented yet.
+An error occured when RPM tried to fork a child process.
 
 =item RPMERR_GDBMOPEN
 
-Not documented yet.
+An error occured when trying to open a GDBM (GNU DBM) database.
 
 =item RPMERR_GDBMREAD
 
-Not documented yet.
+An error occured when trying to read from a GDBM database.
 
 =item RPMERR_GDBMWRITE
 
-Not documented yet.
+An error occured when trying to write to a GDBM database.
 
 =item RPMERR_GZIP
 
-Not documented yet.
+An error occured with the B<gzip> program.
 
 =item RPMERR_INTERNAL
 
-Not documented yet.
+This is used to signal internal errors from within the RPM library. Odds are,
+if your program sees this error, you should exit as cleanly and quickly as
+possible.
 
 =item RPMERR_LDD
 
-Not documented yet.
+An error occurred with the B<ldd> program.
 
 =item RPMERR_MKDIR
 
-Not documented yet.
+An error code was returned from the C<mkdir> system call.
 
 =item RPMERR_MTAB
 
-Not documented yet.
+An error occured when trying to determine file system information from the
+system C<mtab> file.
 
 =item RPMERR_NEWPACKAGE
 
-Not documented yet.
+An attempt was made to create a new package with a specification of an RPM
+version older (less) than 3.
 
 =item RPMERR_NOCREATEDB
 
-Not documented yet.
+An attempt was made to create the database when one already exists.
 
 =item RPMERR_NOGROUP
 
-Not documented yet.
+A group specified for file group-ownership was not found in the list of groups
+on the system. The group C<root> will be used instead.
 
 =item RPMERR_NORELOCATE
 
-Not documented yet.
+An attempt was made to relocate a package that is not relocatable.
 
 =item RPMERR_NOSPACE
 
-Not documented yet.
+An attempt to write a package file failed for lack of available disk space.
 
 =item RPMERR_NOSPEC
 
-Not documented yet.
+Am unpack operation on a source RPM failed to produce a spec file.
 
 =item RPMERR_NOTSRPM
 
-Not documented yet.
+An operation was requested that can only be performed on a source RPM, but the
+specified package was a binary (or C<noarch>) RPM.
 
 =item RPMERR_NOUSER
 
-Not documented yet.
+A specified user (for file ownership) does not exist, and C<root> will be used
+in its place. See B<RPMERR_NOGROUP>.
 
 =item RPMERR_OLDDB
 
-Not documented yet.
+An old-format database is present.
 
 =item RPMERR_OLDDBCORRUPT
 
-Not documented yet.
+An old-format database being read (for conversion) was found to be corrupt.
 
 =item RPMERR_OLDDBMISSING
 
-Not documented yet.
+A request to convert an old-format database found that there was no such
+database present.
 
 =item RPMERR_OLDPACKAGE
 
-Not documented yet.
+An old-format package was detected.
 
 =item RPMERR_PKGINSTALLED
 
-Not documented yet.
+A package requested for install is already installed on the system.
 
 =item RPMERR_READERROR
 
-Not documented yet.
+An error occurred while reading data.
 
 =item RPMERR_RENAME
 
-Not documented yet.
+An error occured while renaming a file.
 
 =item RPMERR_RMDIR
 
-Not documented yet.
+An attempted removal of a directory failed.
 
 =item RPMERR_RPMRC
 
-Not documented yet.
+A parsing or format error in an RC (options) file occurred.
 
 =item RPMERR_SCRIPT
 
-Not documented yet.
+An error occurred while executing a script.
 
 =item RPMERR_SIGGEN
 
-Not documented yet.
+Some type of error occurred when generating a signature on the package.
 
 =item RPMERR_STAT
 
-Not documented yet.
+There was a failure of some sort on a C<stat> system call.
 
 =item RPMERR_UNKNOWNARCH
 
-Not documented yet.
+A requested architecture is unknown to RPM.
 
 =item RPMERR_UNKNOWNOS
 
-Not documented yet.
+A requested operating system is unknown to RPM.
 
 =item RPMERR_UNLINK
 
-Not documented yet.
+An error occurred with the C<unlink> system call.
 
 =item RPMERR_UNMATCHEDIF
 
-Not documented yet.
-
-=back
-
-=head2 Pre-requisite Sense Flags
-
-The following values may be imported via the tag B<:rpmsense>, and are
-used with the values from B<RPMTAG_REQUIREFLAGS> to establish the nature
-of the requirement relationship:
-
-=over
-
-=item RPMSENSE_SENSEMASK
-
-This is a mask that, when applied to a value from B<RPMTAG_REQUIREFLAGS>,
-masks out all bits except for the following three values:
-
-=item RPMSENSE_EQUAL
-
-=item RPMSENSE_GREATER
-
-=item RPMSENSE_LESS
-
-These values are used to check the corresponding entries from
-B<RPMTAG_REQUIRENAME> and B<RPMTAG_REQUIREVERSION>, and specify whether
-the existing file should be of a version equal to, greater than or less than
-the version specified. More than one flag may be present.
-
-=item RPMSENSE_PREREQ
-
-The corresponding item from B<RPMTAG_REQUIRENAME> is a simple pre-requisite,
-generally without specific version checking.
-
-=item RPMSENSE_TRIGGER
-
-Not documented yet.
-
-=item RPMSENSE_TRIGGERIN
-
-Not documented yet.
-
-=item RPMSENSE_TRIGGERPOSTUN
-
-Not documented yet.
-
-=item RPMSENSE_TRIGGERUN
-
-Not documented yet.
+An C<%else> or C<%endif> directive was seen in the spec file, for which there
+is no corresponding C<%if>.
 
 =back
 
 =head2 File-Verification Flags
 
 The values in the B<RPMTAG_FILEVERIFYFLAGS> list defined in the header-tags
-section earlier represent various combinations of the following values.
+section earlier represent various combinations of the following values. These
+tags may be imported via B<:rpmverify>.
 
 =over
 
 =item RPMVERIFY_ALL
 
-A full mask that will match any tested C<RPMVERIFY_*> value
-(except B<RPMVERIFY_NONE>).
+A full mask that will isolate the valid flag-bits from the flag field.
 
 =item RPMVERIFY_NONE
 
@@ -1141,7 +1233,62 @@ failed.
 
 =back
 
+=head2 File Specification Flags
+
+The following tags may be imported via the B<:rpmfile> specifier. They are
+used to express various characteristics of files in the archive, based on the
+value from B<RPMTAG_FILEFLAGS> that corresponds to a given file.
+
+=item RPMFILE_DONOTUSE
+
+Not documented yet.
+
+=item RPMFILE_GHOST
+
+Not documented yet.
+
+=item RPMFILE_LICENSE
+
+Not documented yet.
+
+=item RPMFILE_MISSINGOK
+
+Not documented yet.
+
+=item RPMFILE_NOREPLACE
+
+Not documented yet.
+
+=item RPMFILE_README
+
+Not documented yet.
+
+=item RPMFILE_SPECFILE
+
+Not documented yet.
+
+=item RPMFILE_STATE_NETSHARED
+
+Not documented yet.
+
+=item RPMFILE_STATE_NORMAL
+
+Not documented yet.
+
+=item RPMFILE_STATE_NOTINSTALLED
+
+Not documented yet.
+
+=item RPMFILE_STATE_REPLACED
+
+Not documented yet.
+
+=back
+
 =head2 Not Yet Defined
+
+The following have not yet been categorized. They may, after further research
+and development, be found to be un-needed by this package.
 
 =over
 
@@ -1210,50 +1357,6 @@ Not documented yet.
 Not documented yet.
 
 =item RPMFILE_DOC
-
-Not documented yet.
-
-=item RPMFILE_DONOTUSE
-
-Not documented yet.
-
-=item RPMFILE_GHOST
-
-Not documented yet.
-
-=item RPMFILE_LICENSE
-
-Not documented yet.
-
-=item RPMFILE_MISSINGOK
-
-Not documented yet.
-
-=item RPMFILE_NOREPLACE
-
-Not documented yet.
-
-=item RPMFILE_README
-
-Not documented yet.
-
-=item RPMFILE_SPECFILE
-
-Not documented yet.
-
-=item RPMFILE_STATE_NETSHARED
-
-Not documented yet.
-
-=item RPMFILE_STATE_NORMAL
-
-Not documented yet.
-
-=item RPMFILE_STATE_NOTINSTALLED
-
-Not documented yet.
-
-=item RPMFILE_STATE_REPLACED
 
 Not documented yet.
 

@@ -19,20 +19,24 @@ $OBJECT = join(' ', @OBJECT);
             ($from, "\$(INST_LIBDIR)/$from"); } (sort keys %XS);
 $PM{q(RPM/Error.pm)} = '$(INST_LIBDIR)/RPM/Error.pm';
 
+@SAMPLES = qw(utils/rpmprune);
+%PL_SCRIPTS = map { sprintf("%s.PL", $_) => "$_" } @SAMPLES;
+
 # This shouldn't be necessary, I don't think, but for now it is
 unlink 'RPM/typemap';
 symlink '../typemap', 'RPM/typemap';
 
 # Cruft that MakeMaker wouldn't inherently know about
-$CLEAN = join(' ', values %XS) . " $OBJECT";
+$CLEAN = join(' ', values %XS) . " $OBJECT @SAMPLES";
 $CLEAN .= ' pod2html-* */pod2html-* *.html */*.html RPM/typemap';
 
 #
 # Check for non-Perl dependancies:
 #
 print "Checking for required software components...\n";
-@packages = `rpm -qa`;
-unless (grep(/rpm\-devel/, @packages) && grep(/popt/, @packages))
+chomp($rpm_devel = qx(rpm -q rpm-devel 2>/dev/null));
+chomp($popt = qx(rpm -q popt 2>/dev/null));
+unless ($rpm_devel and $popt)
 {
     die "The Perl-RPM package relies on both the popt and rpm-devel packages
 being installed. Stopped";
@@ -46,6 +50,8 @@ WriteMakefile(
               DEFINE       => '',
               PM           => \%PM,
               XS           => \%XS,
+              PL_FILES     => \%PL_SCRIPTS,
+              EXE_FILES    => [ @SAMPLES ],
               OBJECT       => $OBJECT,
               INC          => '-I/usr/include/rpm',
               DIR          => [],

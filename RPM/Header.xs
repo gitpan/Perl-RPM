@@ -4,7 +4,7 @@
 
 #include "RPM.h"
 
-static char * const rcsid = "$Id: Header.xs,v 1.4 2000/06/05 08:14:32 rjray Exp $";
+static char * const rcsid = "$Id: Header.xs,v 1.9 2000/06/22 08:43:12 rjray Exp $";
 
 /*
   Use this define for deriving the saved Header struct, rather than coding
@@ -19,8 +19,7 @@ static char * const rcsid = "$Id: Header.xs,v 1.4 2000/06/05 08:14:32 rjray Exp 
 /* And a no-return-value version: */
 #define header_from_object(s_ptr, header, object) \
     hv_fetch_nomg((s_ptr), (object), STRUCT_KEY, STRUCT_KEY_LEN, FALSE); \
-    (header) = ((s_ptr) && SvOK(*(s_ptr))) ? (RPM_Header *)SvIV(*(s_ptr)) : NULL; \
-    if (! (header)) return;
+    (header) = ((s_ptr) && SvOK(*(s_ptr))) ? (RPM_Header *)SvIV(*(s_ptr)) : NULL;
 
 
 /* Some simple functions to manage key-to-SV* transactions, since these
@@ -177,16 +176,15 @@ static AV* rpmhdr_create(pTHX_ const char* data, int type, int size)
 /* These three are for reading the header data from external sources */
 static int new_from_fd_t(FD_t fd, RPM_Header* new_hdr)
 {
-    int is_source;
-    int major;
-    int minor;
-
-    if (rpmReadPackageHeader(fd, &new_hdr->hdr, &is_source, &major, &minor))
+    if (rpmReadPackageHeader(fd, &new_hdr->hdr, &new_hdr->isSource,
+                             &new_hdr->major, &new_hdr->minor))
+    {
+        /* Some cases of this failing, rpmError was already called. But not
+           all cases, unfortunately. So check the IV part of rpm_errSV */
+        if (! SvIV(rpm_errSV))
+            rpm_error(aTHX_ RPMERR_READERROR, "Error reading package header");
         return 0;
-
-    new_hdr->isSource = is_source;
-    new_hdr->major = major;
-    new_hdr->minor = minor;
+    }
 
     return 1;
 }
@@ -203,7 +201,7 @@ static int new_from_fname(const char* source, RPM_Header* new_hdr)
     FD_t fd;
 
     if (! (fd = Fopen(source, "r+")))
-        croak("Error opening the file %s", source);
+        return 0;
 
     return(new_from_fd_t(fd, new_hdr));
 }
@@ -214,10 +212,12 @@ RPM__Header rpmhdr_TIEHASH(pTHX_ SV* class, SV* source, int flags)
     int fname_len;
     SV* val;
     RPM__Header TIEHASH;
+    RPM__Header ERR_RETURN;
     RPM_Header* hdr_struct; /* Use this to store the actual C-level data */
 
     hdr_struct = safemalloc(sizeof(RPM_Header));
     Zero(hdr_struct, 1, RPM_Header);
+    ERR_RETURN = (RPM__Header)newSVsv(&PL_sv_undef);
 
     if (! source)
         hdr_struct->hdr = headerNew();
@@ -232,7 +232,7 @@ RPM__Header rpmhdr_TIEHASH(pTHX_ SV* class, SV* source, int flags)
             fname = SvPV(source, fname_len);
             if (! new_from_fname(fname, hdr_struct))
             {
-                return ((RPM__Header)newSVsv(&PL_sv_undef));
+                return ERR_RETURN;
             }
         }
         else if (IoIFP(sv_2io(source)))
@@ -240,12 +240,14 @@ RPM__Header rpmhdr_TIEHASH(pTHX_ SV* class, SV* source, int flags)
             if (! new_from_fd(PerlIO_fileno(IoIFP(sv_2io(source))),
                               hdr_struct))
             {
-                return ((RPM__Header)newSVsv(&PL_sv_undef));
+                return ERR_RETURN;
             }
         }
         else
         {
-            croak("Argument 2 must be filename or GLOB");
+            rpm_error(aTHX_ RPMERR_BADARG,
+                      "Argument 2 must be filename or GLOB");
+            return ERR_RETURN;
         }
     }
     else
@@ -768,6 +770,7 @@ void rpmhdr_DESTROY(pTHX_ RPM__Header self)
     RPM_Header* hdr;
 
     header_from_object(svp, hdr, self);
+    if (! hdr) return;
 
     if (hdr->iterator)
         headerFreeIterator(hdr->iterator);
@@ -874,6 +877,34 @@ int rpmhdr_is_source(pTHX_ RPM__Header self)
         return 0;
     else
         return (hdr->isSource);
+}
+
+/*
+  A classic-style comparison function for two headers, returns -1 if a < b,
+  1 if a > b, and 0 if a == b. In terms of version/release, that is.
+*/
+int rpmhdr_cmpver(pTHX_ RPM__Header self, RPM__Header other)
+{
+    RPM_Header* one;
+    RPM_Header* two;
+    SV** svp;
+
+    header_from_object(svp, one, self);
+    if (! one)
+    {
+        rpm_error(aTHX_ RPMERR_BADARG,
+                  "RPM::Header::rpmhdr_cmpver: Arg 1 has no header data");
+        return 0;
+    }
+    header_from_object(svp, two, other);
+    if (! two)
+    {
+        rpm_error(aTHX_ RPMERR_BADARG,
+                  "RPM::Header::rpmhdr_cmpver: Arg 2 has no header data");
+        return 0;
+    }
+
+    return rpmVersionCompare(one->hdr, two->hdr);
 }
 
 
@@ -1051,3 +1082,32 @@ rpmhdr_is_source(self)
     RETVAL = rpmhdr_is_source(aTHX_ self);
     OUTPUT:
     RETVAL
+
+int
+rpmhdr_cmpver(self, other)
+    RPM::Header self;
+    RPM::Header other;
+    PROTOTYPE: $$
+    CODE:
+    RETVAL = rpmhdr_cmpver(aTHX_ self, other);
+    OUTPUT:
+    RETVAL
+
+void
+rpmhdr_NVR(self)
+    RPM::Header self;
+    PROTOTYPE: $
+    PPCODE:
+    {
+        SV** svp;
+        RPM_Header* hdr;
+
+        header_from_object(svp, hdr, self);
+
+        if (hdr->name)
+        {
+            XPUSHs(sv_2mortal(newSVpv((char *)hdr->name, 0)));
+            XPUSHs(sv_2mortal(newSVpv((char *)hdr->version, 0)));
+            XPUSHs(sv_2mortal(newSVpv((char *)hdr->release, 0)));
+        }
+    }

@@ -1,11 +1,11 @@
 ###############################################################################
 #
-#   (c) Copyright @ 2000, Red Hat Software, Inc.,
+#   (c) Copyright @ 2000, Randy J. Ray <rjray@blackperl.com>
 #               All Rights Reserved
 #
 ###############################################################################
 #
-#   $Id: Header.pm,v 1.2 2000/06/05 08:11:43 rjray Exp $
+#   $Id: Header.pm,v 1.6 2000/06/22 08:42:00 rjray Exp $
 #
 #   Description:    The RPM::Header class provides access to the RPM Header
 #                   structure as a tied hash, allowing direct access to the
@@ -30,10 +30,12 @@ use strict;
 use vars qw($VERSION $revision);
 use subs qw(new);
 
-require RPM;
+use RPM;
+use RPM::Error;
+use RPM::Constants ':rpmerr';
 
 $VERSION = $RPM::VERSION;
-$revision = do { my @r=(q$Revision: 1.2 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+$revision = do { my @r=(q$Revision: 1.6 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 1;
 
@@ -178,6 +180,23 @@ stored within the header.
 =back
 
 =back
+
+=item NVR
+
+The commonly-needed data triple of (B<name>, B<version>, B<release>) may be
+accessed more directly by means of this method. It returns the three values
+on the stack, with no need to dereference list references, as would be the
+case when fetching the three tags via the usual means.
+
+=item cmpver(OTHER)
+
+Compare the version of the current header against that in the header
+referenced by C<$other>. The argument should be an object reference, not
+a tied-hash representation of a header. Returns -1, 0 or 1, based on the
+established behavior of other comparison operators (C<cmp> and C<E<lt>=E<gt>>);
+-1 indicates that the calling object is considered less, or older, than the
+passed argument. A value of 1 indicates that the calling object is greater,
+or newer, than the argument. A value of 0 indicates that they are equal.
 
 =head1 DIAGNOSTICS
 

@@ -5,7 +5,7 @@
 #
 ###############################################################################
 #
-#   $Id: Header.pm,v 1.1 2000/05/22 08:38:52 rjray Exp $
+#   $Id: Header.pm,v 1.1 2000/05/27 03:54:15 rjray Exp $
 #
 #   Description:    The RPM::Header class provides access to the RPM Header
 #                   structure as a tied hash, allowing direct access to the
@@ -27,12 +27,13 @@ package RPM::Header;
 require 5.005;
 
 use strict;
-use vars qw($VERSION);
+use vars qw($VERSION $revision);
 use subs qw(new);
 
 require RPM;
 
-$VERSION = '0.1';
+$VERSION = $RPM::VERSION;
+$revision = do { my @r=(q$Revision: 1.1 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 1;
 
@@ -122,7 +123,7 @@ database.
 
 Given a tag I<TAG>, return the type as a numerical value. The valid types
 can be imported from the B<RPM::Constants> package via the import-tag
-":rpmtypes", and are:
+":rpmtype", and are:
 
 =over
 
@@ -191,3 +192,5 @@ L<RPM>, L<RPM::Database>, L<perl>, L<rpm>
 =head1 AUTHOR
 
 Randy J. Ray <rjray@blackperl.com>
+
+=cut

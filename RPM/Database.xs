@@ -5,7 +5,7 @@
 #include <fcntl.h>
 #include "RPM.h"
 
-static char * const rcsid = "$Id: Database.xs,v 1.13 2001/03/08 06:11:20 rjray Exp $";
+static char * const rcsid = "$Id: Database.xs,v 1.15 2001/05/15 06:22:36 rjray Exp $";
 
 /*
   rpmdb_TIEHASH
@@ -111,7 +111,7 @@ SV* rpmdb_FETCH(pTHX_ RPM__Database self, SV* key)
            thus cached on the hash itself */
         svp = hv_fetch(dbstruct->storage, (char *)name, namelen, FALSE);
         if (svp && SvROK(*svp))
-            return newRV(SvRV(*svp));
+            return newSVsv(*svp);
 
 #if RPM_MAJOR < 4
         /* This is the old (3.0.4+) way of setting up and searching */
@@ -189,12 +189,14 @@ SV* rpmdb_FETCH(pTHX_ RPM__Database self, SV* key)
         FETCHp = rpmhdr_TIEHASH(aTHX_ "RPM::Header",
                                 sv_2mortal(newSViv((unsigned)hdr)),
                                 RPM_HEADER_FROM_REF | RPM_HEADER_READONLY);
+        if (name == Null(const char *))
+            name = SvPV(rpmhdr_FETCH(aTHX_ FETCHp,
+                                     sv_2mortal(newSVpv("NAME", 4)),
+                                     Null(const char *), 0, 0), namelen);
         FETCH = sv_bless(newRV_noinc((SV*)FETCHp),
                          gv_stashpv("RPM::Header", TRUE));
-        /* If name is no longer NULL, it means our vector in was a string
-           (key), so put the result back into the hash-cache. */
-        if (name != NULL)
-            hv_store(dbstruct->storage, (char *)name, namelen, FETCH, FALSE);
+        hv_store(dbstruct->storage, (char *)name, namelen, newSVsv(FETCH),
+                 FALSE);
     }
 #if RPM_MAJOR >= 4
     rpmdbFreeIterator(mi);

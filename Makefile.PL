@@ -1,6 +1,6 @@
 #!/bin/perl
 
-# $Id: Makefile.PL,v 1.19 2001/03/08 06:12:32 rjray Exp $
+# $Id: Makefile.PL,v 1.21 2001/04/27 09:07:08 rjray Exp $
 
 use Config;
 use ExtUtils::MakeMaker;
@@ -88,7 +88,7 @@ list near line 78. Stopped"
 WriteMakefile(
               NAME         => 'RPM',
               DISTNAME     => 'Perl-RPM',
-              VERSION_FROM => 'RPM.pm',
+              VERSION      => '0.31',
               LIBS         => $rpm_libs,
               DEFINE       => $rpm_defines,
               PM           => \%PM,
@@ -97,7 +97,8 @@ WriteMakefile(
               OBJECT       => $OBJECT,
               INC          => "-I. -I$rpm_libdir",
               DIR          => [],
-#              XSOPT        => '-nolinenumbers',
+#              XSOPT        => '-noversioncheck -nolinenumbers',
+              XSOPT        => '-noversioncheck',
               dist         => { COMPRESS => 'gzip -9f' },
               clean        => { FILES => $CLEAN }
              );
@@ -213,6 +214,7 @@ Summary: Perl bindings to the rpmlib API
 Name: SPEC_DISTNAME
 Version: SPEC_VERSION
 Release: SPEC_RELEASE
+Epoch: 1
 Vendor: Randy J. Ray
 Copyright: Artistic
 Group: Applications/CPAN

@@ -1,11 +1,10 @@
 ###############################################################################
 #
-#   (c) Copyright @ 2000, Randy J. Ray <rjray@blackperl.com>
-#               All Rights Reserved
+#   Copyright (c) 2000, 2001, 2002  Randy J. Ray <rjray@blackperl.com>
+#             (c) 2006, 2007  Alexey Tourbin <at@altlinux.org>
+#   All Rights Reserved
 #
 ###############################################################################
-#
-#   $Id: Constants.pm,v 1.18 2001/04/27 09:05:21 rjray Exp $
 #
 #   Description:    Constants for the RPM package
 #
@@ -21,18 +20,15 @@ use strict;
 use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $AUTOLOAD);
 
 require Exporter;
-
-use RPM;
-
 @ISA = qw(Exporter);
 
-$VERSION = do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+require RPM; $VERSION = $RPM::VERSION;
 
 @EXPORT_OK = qw(
-                CHECKSIG_GPG
-                CHECKSIG_MD5
-                CHECKSIG_PGP
+                INSTALL_ERASE
+                INSTALL_FRESHEN
                 INSTALL_HASH
+                INSTALL_INSTALL
                 INSTALL_LABEL
                 INSTALL_NODEPS
                 INSTALL_NOORDER
@@ -43,26 +39,36 @@ $VERSION = do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 QUERY_FOR_DUMPFILES
                 QUERY_FOR_LIST
                 QUERY_FOR_STATE
-                RPM_NULL_TYPE
+                RPM_BIN_TYPE
                 RPM_CHAR_TYPE
-                RPM_INT8_TYPE
+                RPM_I18NSTRING_TYPE
                 RPM_INT16_TYPE
                 RPM_INT32_TYPE
-                RPM_STRING_TYPE
-                RPM_BIN_TYPE
+                RPM_INT8_TYPE
+                RPM_MACHTABLE_BUILDARCH
+                RPM_MACHTABLE_BUILDOS
+                RPM_MACHTABLE_INSTARCH
+                RPM_MACHTABLE_INSTOS
+                RPM_NULL_TYPE
                 RPM_STRING_ARRAY_TYPE
-                RPM_I18NSTRING_TYPE
+                RPM_STRING_TYPE
                 RPMERR_BADARG
                 RPMERR_BADDEV
                 RPMERR_BADFILENAME
+                RPMERR_BADHEADER
                 RPMERR_BADMAGIC
+                RPMERR_BADPACKAGE
                 RPMERR_BADRELOCATE
                 RPMERR_BADSIGTYPE
                 RPMERR_BADSPEC
+                RPMERR_BUILDROOT
                 RPMERR_CHOWN
                 RPMERR_CPIO
                 RPMERR_CREATE
+                RPMERR_DATATYPE
+                RPMERR_DBCONFIG
                 RPMERR_DBCORRUPT
+                RPMERR_DBERR
                 RPMERR_DBGETINDEX
                 RPMERR_DBOPEN
                 RPMERR_DBPUTINDEX
@@ -70,12 +76,18 @@ $VERSION = do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 RPMERR_FILECONFLICT
                 RPMERR_FLOCK
                 RPMERR_FORK
+                RPMERR_FREAD
+                RPMERR_FREELIST
+                RPMERR_FSEEK
+                RPMERR_FWRITE
                 RPMERR_GDBMOPEN
                 RPMERR_GDBMREAD
                 RPMERR_GDBMWRITE
                 RPMERR_GZIP
                 RPMERR_INTERNAL
                 RPMERR_LDD
+                RPMERR_MAKETEMP
+                RPMERR_MANIFEST
                 RPMERR_MKDIR
                 RPMERR_MTAB
                 RPMERR_NEWPACKAGE
@@ -84,27 +96,39 @@ $VERSION = do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 RPMERR_NORELOCATE
                 RPMERR_NOSPACE
                 RPMERR_NOSPEC
+                RPMERR_NOTREG
                 RPMERR_NOTSRPM
                 RPMERR_NOUSER
                 RPMERR_OLDDB
                 RPMERR_OLDDBCORRUPT
                 RPMERR_OLDDBMISSING
                 RPMERR_OLDPACKAGE
+                RPMERR_OPEN
                 RPMERR_PKGINSTALLED
+                RPMERR_POPEN
+                RPMERR_QFMT
+                RPMERR_QUERY
+                RPMERR_QUERYINFO
+                RPMERR_READ
                 RPMERR_READERROR
+                RPMERR_READLEAD
+                RPMERR_REGCOMP
+                RPMERR_REGEXEC
+                RPMERR_RELOAD
                 RPMERR_RENAME
                 RPMERR_RMDIR
                 RPMERR_RPMRC
                 RPMERR_SCRIPT
                 RPMERR_SIGGEN
+                RPMERR_SIGVFY
                 RPMERR_STAT
                 RPMERR_UNKNOWNARCH
                 RPMERR_UNKNOWNOS
                 RPMERR_UNLINK
                 RPMERR_UNMATCHEDIF
+                RPMERR_WRITELEAD
                 RPMFILE_CONFIG
                 RPMFILE_DOC
-                RPMFILE_DONOTUSE
                 RPMFILE_GHOST
                 RPMFILE_LICENSE
                 RPMFILE_MISSINGOK
@@ -115,6 +139,7 @@ $VERSION = do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 RPMFILE_STATE_NORMAL
                 RPMFILE_STATE_NOTINSTALLED
                 RPMFILE_STATE_REPLACED
+                RPMPROB_FILTER_DISKNODES
                 RPMPROB_FILTER_DISKSPACE
                 RPMPROB_FILTER_FORCERELOCATE
                 RPMPROB_FILTER_IGNOREARCH
@@ -123,8 +148,14 @@ $VERSION = do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 RPMPROB_FILTER_REPLACENEWFILES
                 RPMPROB_FILTER_REPLACEOLDFILES
                 RPMPROB_FILTER_REPLACEPKG
+                RPMRC_FAIL
+                RPMRC_OK
+                RPMSENSE_CONFLICTS
                 RPMSENSE_EQUAL
+                RPMSENSE_FIND_PROVIDES
+                RPMSENSE_FIND_REQUIRES
                 RPMSENSE_GREATER
+                RPMSENSE_INTERP
                 RPMSENSE_LESS
                 RPMSENSE_OBSOLETES
                 RPMSENSE_PREREQ
@@ -133,18 +164,19 @@ $VERSION = do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 RPMSENSE_TRIGGERIN
                 RPMSENSE_TRIGGERPOSTUN
                 RPMSENSE_TRIGGERUN
+                RPMSIGTAG_BADSHA1_1
+                RPMSIGTAG_BADSHA1_2
+                RPMSIGTAG_DSA
                 RPMSIGTAG_GPG
                 RPMSIGTAG_LEMD5_1
                 RPMSIGTAG_LEMD5_2
                 RPMSIGTAG_MD5
+                RPMSIGTAG_PAYLOADSIZE
                 RPMSIGTAG_PGP
                 RPMSIGTAG_PGP5
+                RPMSIGTAG_RSA
+                RPMSIGTAG_SHA1
                 RPMSIGTAG_SIZE
-                RPMSIG_BAD
-                RPMSIG_NOKEY
-                RPMSIG_NOTTRUSTED
-                RPMSIG_OK
-                RPMSIG_UNKNOWN
                 RPMTAG_ARCH
                 RPMTAG_ARCHIVESIZE
                 RPMTAG_BASENAMES
@@ -153,23 +185,28 @@ $VERSION = do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 RPMTAG_BUILDMACROS
                 RPMTAG_BUILDROOT
                 RPMTAG_BUILDTIME
-                RPMTAG_CAPABILITY
                 RPMTAG_CHANGELOGNAME
                 RPMTAG_CHANGELOGTEXT
                 RPMTAG_CHANGELOGTIME
                 RPMTAG_CONFLICTFLAGS
                 RPMTAG_CONFLICTNAME
                 RPMTAG_CONFLICTVERSION
-                RPMTAG_COPYRIGHT
                 RPMTAG_COOKIE
+                RPMTAG_COPYRIGHT
                 RPMTAG_DESCRIPTION
                 RPMTAG_DIRINDEXES
                 RPMTAG_DIRNAMES
                 RPMTAG_DISTRIBUTION
+                RPMTAG_DISTURL
+                RPMTAG_EPOCH
                 RPMTAG_EXCLUDEARCH
                 RPMTAG_EXCLUDEOS
                 RPMTAG_EXCLUSIVEARCH
                 RPMTAG_EXCLUSIVEOS
+                RPMTAG_FILECLASS
+                RPMTAG_FILECOLORS
+                RPMTAG_FILEDEPENDSN
+                RPMTAG_FILEDEPENDSX
                 RPMTAG_FILEDEVICES
                 RPMTAG_FILEFLAGS
                 RPMTAG_FILEGROUPNAME
@@ -187,18 +224,25 @@ $VERSION = do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 RPMTAG_GIF
                 RPMTAG_GROUP
                 RPMTAG_ICON
+                RPMTAG_INSTALLPREFIX
+                RPMTAG_INSTALLTID
                 RPMTAG_INSTALLTIME
                 RPMTAG_INSTPREFIXES
                 RPMTAG_LICENSE
+                RPMTAG_NAME
                 RPMTAG_NOPATCH
                 RPMTAG_NOSOURCE
-                RPMTAG_NAME
                 RPMTAG_OBSOLETEFLAGS
                 RPMTAG_OBSOLETENAME
                 RPMTAG_OBSOLETEVERSION
+                RPMTAG_OPTFLAGS
                 RPMTAG_OS
                 RPMTAG_PACKAGER
                 RPMTAG_PATCH
+                RPMTAG_PAYLOADCOMPRESSOR
+                RPMTAG_PAYLOADFLAGS
+                RPMTAG_PAYLOADFORMAT
+                RPMTAG_PLATFORM
                 RPMTAG_POSTIN
                 RPMTAG_POSTINPROG
                 RPMTAG_POSTUN
@@ -220,7 +264,6 @@ $VERSION = do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 RPMTAG_SOURCE
                 RPMTAG_SOURCERPM
                 RPMTAG_SUMMARY
-                RPMTAG_TRIGGERCONDS
                 RPMTAG_TRIGGERFLAGS
                 RPMTAG_TRIGGERINDEX
                 RPMTAG_TRIGGERNAME
@@ -238,8 +281,17 @@ $VERSION = do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 RPMTRANS_FLAG_JUSTDB
                 RPMTRANS_FLAG_KEEPOBSOLETE
                 RPMTRANS_FLAG_NODOCS
+                RPMTRANS_FLAG_NOMD5
+                RPMTRANS_FLAG_NOPOST
+                RPMTRANS_FLAG_NOPOSTUN
+                RPMTRANS_FLAG_NOPRE
+                RPMTRANS_FLAG_NOPREUN
                 RPMTRANS_FLAG_NOSCRIPTS
+                RPMTRANS_FLAG_NOTRIGGERIN
+                RPMTRANS_FLAG_NOTRIGGERPOSTUN
+                RPMTRANS_FLAG_NOTRIGGERPREIN
                 RPMTRANS_FLAG_NOTRIGGERS
+                RPMTRANS_FLAG_NOTRIGGERUN
                 RPMTRANS_FLAG_TEST
                 RPMVERIFY_ALL
                 RPMVERIFY_FILESIZE
@@ -257,9 +309,17 @@ $VERSION = do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r 
                 UNINSTALL_ALLMATCHES
                 UNINSTALL_NODEPS
                 VERIFY_DEPS
+                VERIFY_DIGEST
                 VERIFY_FILES
+                VERIFY_GROUP
+                VERIFY_LINKTO
                 VERIFY_MD5
+                VERIFY_MODE
+                VERIFY_MTIME
+                VERIFY_RDEV
                 VERIFY_SCRIPT
+                VERIFY_SIZE
+                VERIFY_USER
                );
 
 #
@@ -1112,7 +1172,7 @@ An old-format package was detected.
 
 A package requested for install is already installed on the system.
 
-=item RPMERR_READERROR
+=item RPMERR_READ
 
 An error occurred while reading data.
 
@@ -1502,8 +1562,9 @@ Not documented yet.
 
 L<RPM>, L<perl>, L<rpm>
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Randy J. Ray <rjray@blackperl.com>
+Randy J. Ray <rjray@blackperl.com>,
+Alexey Tourbin <at@altlinux.org>.
 
 =cut

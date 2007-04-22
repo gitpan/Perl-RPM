@@ -1,10 +1,9 @@
+#define PERL_NO_GET_CONTEXT
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
 
 #include "RPM.h"
-
-static char * const rcsid = "$Id: Error.xs,v 1.5 2002/05/10 07:38:21 rjray Exp $";
 
 static CV* err_callback;
 
@@ -29,7 +28,7 @@ static void rpm_catch_errors(void)
     error_string = rpmErrorString();
 
     /* Set the string part, first */
-    sv_setsv(rpm_errSV, newSVpv((char*)error_string, strlen(error_string)));
+    sv_setpv(rpm_errSV, error_string);
     /* Set the IV part */
     sv_setiv(rpm_errSV, error_code);
     /* Doing that didn't erase the PV part, but it cleared the flag: */
@@ -48,7 +47,7 @@ static void rpm_catch_errors(void)
         PUTBACK;
 
         /* The actual call */
-        perl_call_sv((SV *)err_callback, G_DISCARD);
+        call_sv((SV *)err_callback, G_DISCARD);
 
         /* More boilerplate */
         SPAGAIN;
@@ -60,16 +59,7 @@ static void rpm_catch_errors(void)
     return;
 }
 
-/* This is just to offer an easy way to clear both sides of $RPM::err */
-void clear_errors(pTHX)
-{
-    sv_setsv(rpm_errSV, newSVpv("", 0));
-    sv_setiv(rpm_errSV, 0);
-    SvPOK_on(rpm_errSV);
-
-    return;
-}
-
+static
 SV* set_error_callback(pTHX_ SV* newcb)
 {
     SV* oldcb;
@@ -81,20 +71,16 @@ SV* set_error_callback(pTHX_ SV* newcb)
         err_callback = (CV *)newcb;
     else if (SvPOK(newcb))
     {
-        char* fn_name;
-        char* sv_name;
+        STRLEN len;
+        const char *name = SvPV(newcb, len);
 
-        sv_name = SvPV(newcb, PL_na);
-        if (! strstr(sv_name, "::"))
-        {
-            Newz(TRUE, fn_name, strlen(sv_name) + 7, char);
-            strncat(fn_name, "main::", 6);
-            strcat(fn_name + 6, sv_name);
+        if (strstr(name, "::"))
+            err_callback = get_cv(name, FALSE);
+        else {
+            SV *sv = sv_2mortal(newSVpvn("main::", 6));
+            sv_catpvn(sv, name, len);
+            err_callback = get_cv(SvPV_nolen(sv), FALSE);
         }
-        else
-            fn_name = sv_name;
-
-        err_callback = perl_get_cv(fn_name, FALSE);
     }
     else
     {
@@ -102,11 +88,6 @@ SV* set_error_callback(pTHX_ SV* newcb)
     }
 
     return oldcb;
-}
-
-void rpm_error(pTHX_ int code, const char* message)
-{
-    rpmError(code, (char *)message);
 }
 
 
@@ -126,7 +107,10 @@ void
 clear_errors()
     PROTOTYPE:
     CODE:
-    clear_errors(aTHX);
+/* This is just to offer an easy way to clear both sides of $RPM::err */
+    sv_setpv(rpm_errSV, "");
+    sv_setiv(rpm_errSV, 0);
+    SvPOK_on(rpm_errSV);
 
 void
 rpm_error(code, message)
@@ -134,12 +118,12 @@ rpm_error(code, message)
     char* message;
     PROTOTYPE: $$
     CODE:
-    rpm_error(aTHX_ code, message);
+    rpmError(code, "%s", message);
 
 
 BOOT:
 {
-    rpm_errSV = perl_get_sv("RPM::err", GV_ADD|GV_ADDMULTI);
+    rpm_errSV = get_sv("RPM::err", GV_ADD|GV_ADDMULTI);
     rpmErrorSetCallback(rpm_catch_errors);
     err_callback = Nullcv;
 }

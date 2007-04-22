@@ -1,6 +1,6 @@
 Perl-RPM - Native bindings to the RPM Package Manager API for Perl
 
-Version 0.40 (alpha thirteen)
+Version 1.49_01
 
 
 WHAT IS IT
@@ -56,7 +56,9 @@ support for versions of rpm prior to 4.0.3.
 
 LICENSE
 
-This package is Copyright (C) 2000 by Randy J. Ray (rjray@blackperl.com). You
-may distribute this under the terms of Artistic License, as specified in the
-README file of Perl itself. Please see the file ARTISTIC in your distribution
-of Perl.
+This package is Copyright
+        (C) 2000, 2001, 2002  Randy J. Ray <rjray@blackperl.com>,
+        (C) 2006, 2007  Alexey Tourbin <at@altlinux.org>.
+You may distribute this under the terms of Artistic License, as specified
+in the README file of Perl itself. Please see the file ARTISTIC in your
+distribution of Perl.

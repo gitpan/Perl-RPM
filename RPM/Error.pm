@@ -1,13 +1,13 @@
 ###############################################################################
 #
-# This file copyright (c) 2000 by Randy J. Ray, all rights reserved
+#   Copyright (c) 2000, 2001, 2002  Randy J. Ray <rjray@blackperl.com>
+#             (c) 2006, 2007  Alexey Tourbin <at@altlinux.org>
+#   All Rights Reserved
 #
 # Copying and distribution are permitted under the terms of the Artistic
 # License as distributed with Perl versions 5.002 and later.
 #
 ###############################################################################
-#
-#   $Id: Error.pm,v 1.10 2001/04/27 09:05:21 rjray Exp $
 #
 #   Description:    Error-management support that cooperates with the primary
 #                   Perl/C error glue.
@@ -29,11 +29,9 @@ use strict;
 use vars qw(@ISA $VERSION @EXPORT @EXPORT_OK);
 
 require Exporter;
-require RPM;
-
 @ISA = qw(Exporter);
 
-$VERSION = do { my @r=(q$Revision: 1.10 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+require RPM; $VERSION = $RPM::VERSION;
 
 @EXPORT = qw(clear_errors set_error_callback rpm_error);
 @EXPORT_OK = @EXPORT;
@@ -119,8 +117,9 @@ valid constants before assignment.
 
 L<RPM>, L<perl>, L<rpm>
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Randy J. Ray <rjray@blackperl.com>
+Randy J. Ray <rjray@blackperl.com>,
+Alexey Tourbin <at@altlinux.org>.
 
 =cut

@@ -1,109 +1,183 @@
+#define PERL_NO_GET_CONTEXT
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
 
 #include "RPM.h"
 
-static char * const rcsid = "$Id: RPM.xs,v 1.9 2000/11/10 08:49:57 rjray Exp $";
-
 extern XS(boot_RPM__Constants);
 extern XS(boot_RPM__Header);
 extern XS(boot_RPM__Database);
 extern XS(boot_RPM__Error);
-/*extern XS(boot_RPM__Package);*/
 
-static HV* tag2num_priv;
-static HV* num2tag_priv;
+void *rpm_hvref2ptr(pTHX_ SV *arg, const char *ntype)
+{
+    void *var = Null(void *);
+    if (arg &&
+        sv_isobject(arg) &&
+        sv_derived_from(arg, ntype) &&
+        SvTYPE(SvRV(arg)) == SVt_PVHV)
+    {
+        MAGIC *mg = mg_find(SvRV(arg), '~');
+        if (mg)
+            var = INT2PTR(void *, SvIV(mg->mg_obj));
+    }
+    return var;
+}
+
+SV *rpm_ptr2hvref(pTHX_ void *var, const char *ntype)
+{
+    SV *arg = &PL_sv_undef;
+    if (var) {
+        HV *hv = newHV();
+        SV *mg = newSViv(PTR2IV(var));
+        sv_magic((SV*)hv, Nullsv, 'P', Nullch, 0);
+        sv_magic((SV*)hv, mg, '~', Nullch, 0);
+        SvREFCNT_dec(mg);
+        arg = sv_bless(newRV_noinc((SV*)hv), gv_stashpv(ntype, TRUE));
+    }
+    return arg;
+}
+
+static HV* rpmtag_hv_pv2iv;
+static HV* rpmtag_hv_iv2pv;
 
 static void setup_tag_mappings(pTHX)
 {
-    const char* tag;
-    int num;
-    int idx;
-    char str_num[8];
+    const char *name;
+    char str_num[32];
+    size_t len, num_len;
+    int i, tag;
 
-    tag2num_priv = perl_get_hv("RPM::tag2num", TRUE);
-    num2tag_priv = perl_get_hv("RPM::num2tag", TRUE);
-    for (idx = 0; idx < rpmTagTableSize; idx++)
+    rpmtag_hv_pv2iv = get_hv("RPM::tag2num", TRUE);
+    rpmtag_hv_iv2pv = get_hv("RPM::num2tag", TRUE);
+    for (i = 0; i < rpmTagTableSize; i++)
     {
-        /*
-          For future reference: The offset of 7 used in referring to the
-          (const char *) tag and its length is to discard the "RPMTAG_"
-          prefix inherent in the tag names.
-        */
-        tag = rpmTagTable[idx].name;
-        num = rpmTagTable[idx].val;
-        hv_store(tag2num_priv, (char *)tag + 7, strlen(tag) - 7,
-                 newSViv(num), FALSE);
-        Zero(str_num, 1, 8);
-        snprintf(str_num, 8, "%d", num);
-        hv_store(num2tag_priv, str_num, strlen(str_num),
-                 newSVpv((char *)tag + 7, strlen(tag) - 7), FALSE);
+        name = rpmTagTable[i].name;
+        tag = rpmTagTable[i].val;
+        len = strlen(name);
+        if (len <= 7 || strnNE(name, "RPMTAG_", 7)) {
+            warn("Invalid rpm tag `%s'", name);
+            continue;
+        }
+        name += 7;
+        len -= 7;
+        hv_store(rpmtag_hv_pv2iv, name, len, newSViv(tag), FALSE);
+        num_len = snprintf(str_num, sizeof(str_num), "%d", tag);
+        hv_store(rpmtag_hv_iv2pv, str_num, num_len,
+                 newSVpvn_share(name, len, 0), FALSE);
     }
 }
 
-int tag2num(pTHX_ const char* tag)
+int rpmtag_pv2iv(pTHX_ const char *name)
 {
-    SV** svp;
+    SV **svp;
+    char uc_name[32];
+    int i, len;
 
-    /* Get the #define value for the tag from the hash made at boot-up */
-    svp = hv_fetch(tag2num_priv, (char *)tag, strlen(tag), FALSE);
-    if (! (svp && SvOK(*svp) && SvIOK(*svp)))
-        /* Later we may need to set some sort of error message */
+    if (! (name && *name)) {
+        rpmError(RPMERR_BADARG, "Unknown rpm tag name (null)");
         return 0;
+    }
 
-    return (SvIV(*svp));
+    len = strlen(name);
+    if (len > 7 && strnEQ(name, "RPMTAG_", 7)) {
+        name += 7;
+        len -= 7;
+    }
+    if (len > sizeof(uc_name)) {
+        rpmError(RPMERR_BADARG, "Bad rpm tag name `%.*s...' (too long)",
+                 sizeof(uc_name), name);
+        return 0;
+    }
+
+    for (i = 0; i < len; i++)
+        uc_name[i] = toUPPER(name[i]);
+
+    svp = hv_fetch(rpmtag_hv_pv2iv, uc_name, len, FALSE);
+
+    if (svp && SvOK(*svp) && SvIOK(*svp))
+        return SvIV(*svp);
+    rpmError(RPMERR_BADARG, "Unknown rpm tag name `%s'", name);
+    return 0;
 }
 
-const char* num2tag(pTHX_ int num)
+const char *rpmtag_iv2pv(pTHX_ int tag)
 {
-    SV** svp;
-    char str_num[8];
+    SV **svp;
+    int len;
+    char str_num[32];
 
-    Zero(str_num, 1, 8);
-    snprintf(str_num, 8, "%d", num);
-    svp = hv_fetch(num2tag_priv, str_num, strlen(str_num), FALSE);
-    if (! (svp && SvPOK(*svp)))
-        return Nullch;
-
-    return (SvPV(*svp, PL_na));
+    len = snprintf(str_num, sizeof(str_num), "%d", tag);
+    svp = hv_fetch(rpmtag_hv_iv2pv, str_num, len, FALSE);
+    if (svp && SvOK(*svp) && SvPOK(*svp))
+        return SvPV_nolen(*svp);
+    rpmError(RPMERR_BADARG, "Unknown rpm tag number %d", tag);
+    return Nullch;
 }
 
-char* rpm_rpm_osname(void)
+SV *rpmtag_iv2sv(pTHX_ int tag)
 {
-    char* os_name;
-    int os_val;
-
-    rpmGetOsInfo((const char **)&os_name, &os_val);
-    return os_name;
+    SV *sv = &PL_sv_undef;
+    const char *name = rpmtag_iv2pv(aTHX_ tag);
+    if (name) {
+        sv = newSVpv(name, 0);
+        sv_setiv(sv, tag);
+        SvPOK_on(sv);
+    }
+    return sv;
 }
 
-char* rpm_rpm_archname(void)
+int rpmtag_sv2iv(pTHX_ SV *sv)
 {
-    char* arch_name;
-    int arch_val;
-
-    rpmGetArchInfo((const char **)&arch_name, &arch_val);
-    return arch_name;
+    if (! (sv && SvOK(sv))) {
+        rpmError(RPMERR_BADARG, "Unknown rpm tag (undef)");
+        return 0;
+    }
+    if (SvIOK(sv)) {
+        int tag = SvIV(sv);
+        const char *name = rpmtag_iv2pv(aTHX_ tag);
+        return name ? tag : 0;
+    }
+    if (SvPOK(sv)) {
+        const char *name = SvPV_nolen(sv);
+        return rpmtag_pv2iv(aTHX_ name);
+    }
+    rpmError(RPMERR_BADARG, "Unknown rpm tag (bad argument)");
+    return 0;
 }
 
 MODULE = RPM            PACKAGE = RPM           PREFIX = rpm_
 
-
-char*
+const char *
 rpm_rpm_osname()
     PROTOTYPE:
+    CODE:
+    rpmGetOsInfo(&RETVAL, Null(int *));
+    OUTPUT:
+    RETVAL
 
-char*
+const char *
 rpm_rpm_archname()
     PROTOTYPE:
+    CODE:
+    rpmGetArchInfo(&RETVAL, Null(int *));
+    OUTPUT:
+    RETVAL
 
+const char *
+rpm_rpm_version()
+    PROTOTYPE:
+    CODE:
+    RETVAL = RPMVERSION;
+    OUTPUT:
+    RETVAL
 
 BOOT:
 {
     SV * config_loaded;
 
-    config_loaded = perl_get_sv("RPM::__config_loaded", GV_ADD|GV_ADDMULTI);
+    config_loaded = get_sv("RPM::__config_loaded", TRUE);
     if (! (SvOK(config_loaded) && SvTRUE(config_loaded)))
     {
         rpmReadConfigFiles(NULL, NULL);
@@ -116,5 +190,4 @@ BOOT:
     newXS("RPM::bootstrap_Header", boot_RPM__Header, file);
     newXS("RPM::bootstrap_Database", boot_RPM__Database, file);
     newXS("RPM::bootstrap_Error", boot_RPM__Error, file);
-    /*newXS("RPM::bootstrap_Package", boot_RPM__Package, file);*/
 }

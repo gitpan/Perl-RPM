@@ -1,7 +1,5 @@
 #!/bin/perl
 
-# $Id: Makefile.PL,v 1.29 2002/05/10 08:04:55 rjray Exp $
-
 use Config;
 use ExtUtils::MakeMaker;
 use Cwd 'cwd';
@@ -42,7 +40,7 @@ $CLEAN = join(' ', values %XS) . " $OBJECT";
 $CLEAN .= ' Perl-RPM.spec pod2html-* */pod2html-* *.html */*.html RPM/typemap';
 $CLEAN .= ' rpmrc rpmmacro Perl-RPM-*';
 
-$rpm_libs = '-lrpm -lrpmdb -lrpmio -lpopt';
+$rpm_libs = '-lrpm -lrpmdb -lrpmio';
 # Check for needed header files
 $rpm_libdir = '';
 unless ($opts{build})
@@ -61,10 +59,19 @@ list near this line. Stopped"
         unless $rpm_libdir;
 }
 
+my $rpm_defines = '';
+my $rpm_version = `rpm --version`;
+if ($rpm_version =~ /\s(\d+)\.(\d+)\.(\d+)/) {
+    $rpm_defines = sprintf '-DRPM_VERSION=0x%06x', ($1<<16)|($2<<8)|$3;
+}
+else {
+    die "bad rpm version $rpm_version";
+}
+
 WriteMakefile(
               NAME         => 'RPM',
               DISTNAME     => 'Perl-RPM',
-              VERSION      => '0.40',
+              VERSION_FROM => 'RPM.pm',
               LIBS         => $rpm_libs,
               DEFINE       => $rpm_defines,
               PM           => \%PM,
@@ -73,8 +80,6 @@ WriteMakefile(
               OBJECT       => $OBJECT,
               INC          => $rpm_libdir ? "-I. -I$rpm_libdir" : '-I.',
               DIR          => [],
-#              XSOPT        => '-noversioncheck -nolinenumbers',
-              XSOPT        => '-noversioncheck',
               dist         => { COMPRESS => 'gzip -9f' },
               clean        => { FILES => $CLEAN }
              );

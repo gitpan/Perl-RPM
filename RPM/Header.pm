@@ -1,11 +1,10 @@
 ###############################################################################
 #
-#   (c) Copyright @ 2000, Randy J. Ray <rjray@blackperl.com>
-#               All Rights Reserved
+#   Copyright (c) 2000, 2001, 2002  Randy J. Ray <rjray@blackperl.com>
+#             (c) 2006, 2007  Alexey Tourbin <at@altlinux.org>
+#   All Rights Reserved
 #
 ###############################################################################
-#
-#   $Id: Header.pm,v 1.20 2001/04/27 09:05:21 rjray Exp $
 #
 #   Description:    The RPM::Header class provides access to the RPM Header
 #                   structure as a tied hash, allowing direct access to the
@@ -32,35 +31,11 @@ use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $AUTOLOAD);
 use subs qw(new AUTOLOAD filenames);
 
-require Exporter;
-
-use RPM;
+use RPM; $VERSION = $RPM::VERSION;
 use RPM::Error;
 use RPM::Constants ':rpmerr';
 
-$VERSION = do { my @r=(q$Revision: 1.20 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
-
-@ISA = qw(Exporter);
-@EXPORT = ();
-@EXPORT_OK = qw(RPM_HEADER_MASK RPM_HEADER_READONLY);
-%EXPORT_TAGS = (all => \@EXPORT_OK);
-
 1;
-
-sub AUTOLOAD
-{
-    my $constname;
-    ($constname = $AUTOLOAD) =~ s/.*:://;
-    die "& not defined" if $constname eq 'constant';
-    my $val = constant($constname);
-    if ($! != 0)
-    {
-        die "Your vendor has not defined RPM macro $constname";
-    }
-    no strict 'refs';
-    *$AUTOLOAD = sub { $val };
-    goto &$AUTOLOAD;
-}
 
 sub new
 {
@@ -302,8 +277,9 @@ subject to change in future releases.
 
 L<RPM>, L<RPM::Database>, L<RPM::Constants>, L<perl>, L<rpm>
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Randy J. Ray <rjray@blackperl.com>
+Randy J. Ray <rjray@blackperl.com>,
+Alexey Tourbin <at@altlinux.org>.
 
 =cut

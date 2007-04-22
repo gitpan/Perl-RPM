@@ -9,10 +9,10 @@ require DynaLoader;
 require Exporter;
 
 @ISA = qw(Exporter DynaLoader);
-$VERSION = do { my @r=(q$Revision: 1.17 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
+$VERSION = '1.49_01';
 
-@EXPORT = qw(rpm_osname rpm_archname);
-@EXPORT_OK = (@EXPORT, 'vercmp');
+@EXPORT = qw(rpm_osname rpm_archname rpm_version);
+@EXPORT_OK = (@EXPORT, 'vercmp', 'evrcmp');
 
 bootstrap RPM;
 
@@ -49,7 +49,7 @@ sub vercmp
 {
     my ($verA, $relA, $verB, $relB) = @_;
 
-    require RPM::Header unless $INC{'RPM/Header.pm'};
+    require RPM::Header;
 
     my $headA = new RPM::Header;
     my $headB = new RPM::Header;
@@ -60,6 +60,29 @@ sub vercmp
     $headB->{release} = $relB;
 
     $headA->cmpver($headB);
+}
+
+# Compare [Epoch:]Version[-Release]
+sub evrcmp ($$) {
+    my @rpm = @_;
+    foreach (@rpm) {
+	next if ref $_;
+	require RPM::Header;
+	my $hdr = RPM::Header->new;
+	if (s/^(\d+)://) {
+	    $$hdr{EPOCH} = int $1;
+	}
+	if (m/^(.+)-(.+)$/) {
+	    $$hdr{VERSION} = $1;
+	    $$hdr{RELEASE} = $2;
+	}
+	else {
+	    $$hdr{VERSION} = $_;
+	    $$hdr{RELEASE} = "";
+	}
+	$_ = $hdr;
+    }
+    $rpm[0]->cmpver($rpm[1]);
 }
 
 __END__
@@ -108,7 +131,9 @@ for maximum cross-platform compatibility.
 The following utility function may be explicitly requested via B<use> or
 B<import>:
 
-=over vercmp($verA, $relA, $verB, $relB)
+=over
+
+=item vercmp($verA, $relA, $verB, $relB)
 
 Allows RPM-style comparison of version/release pairs without having the full
 B<RPM::Header> objects in memory. This enables programs to compare versions
@@ -116,6 +141,12 @@ without having to worry about how RPM handles the mixture of alphanumeric
 cases that are supported internally. The return value is -1, 0 or 1, as with
 any comparison operator. This is purposefully named differently from the
 B<cmpver> method in B<RPM::Header> so as to avoid confusion.
+
+=item evrcmp($A, $B)
+
+Similar to C<vercmp>, but takes into account the Epoch along with Version/Release.
+Each of C<$A>, C<$B> must be either C<RPM::Header> object or C<[Epoch:]Version[-Release]>
+specification string.
 
 =back
 
@@ -138,8 +169,9 @@ subject to change in future releases.
 L<RPM::Constants>, L<RPM::Database>, L<RPM::Error>, L<RPM::Header>,
 L<perl>, L<rpm>
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Randy J. Ray <rjray@blackperl.com>
+Randy J. Ray <rjray@blackperl.com>,
+Alexey Tourbin <at@altlinux.org>.
 
 =cut

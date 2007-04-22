@@ -1,17 +1,17 @@
+#define PERL_NO_GET_CONTEXT
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
 
 #include "RPM.h"
 
-static char * const rcsid = "$Id: Constants.xs,v 1.12 2002/04/11 22:40:20 rjray Exp $";
-
-static int constant(pTHX_ char *name)
+static int constant(pTHX_ const char *name)
 {
     errno = 0;
 
     switch (*name)
     {
+#if RPM_VERSION < 0x040100
       case 'C':
         if (strnEQ(name, "CHECKSIG_", 9))
         {
@@ -23,11 +23,18 @@ static int constant(pTHX_ char *name)
                 return CHECKSIG_PGP;
         }
         break;
+#endif
       case 'I':
         if (strnEQ(name, "INSTALL_", 8))
         {
+            if (strEQ(name + 8, "ERASE"))
+                return INSTALL_ERASE;
+            if (strEQ(name + 8, "FRESHEN"))
+                return INSTALL_FRESHEN;
             if (strEQ(name + 8, "HASH"))
                 return INSTALL_HASH;
+            if (strEQ(name + 8, "INSTALL"))
+                return INSTALL_INSTALL;
             if (strEQ(name + 8, "LABEL"))
                 return INSTALL_LABEL;
             if (strEQ(name + 8, "NODEPS"))
@@ -103,14 +110,20 @@ static int constant(pTHX_ char *name)
                     return RPMERR_BADDEV;
                 if (strEQ(name + 7, "BADFILENAME"))
                     return RPMERR_BADFILENAME;
+                if (strEQ(name + 7, "BADHEADER"))
+                    return RPMERR_BADHEADER;
                 if (strEQ(name + 7, "BADMAGIC"))
                     return RPMERR_BADMAGIC;
+                if (strEQ(name + 7, "BADPACKAGE"))
+                    return RPMERR_BADPACKAGE;
                 if (strEQ(name + 7, "BADRELOCATE"))
                     return RPMERR_BADRELOCATE;
                 if (strEQ(name + 7, "BADSIGTYPE"))
                     return RPMERR_BADSIGTYPE;
                 if (strEQ(name + 7, "BADSPEC"))
                     return RPMERR_BADSPEC;
+                if (strEQ(name + 7, "BUILDROOT"))
+                    return RPMERR_BUILDROOT;
                 break;
               case 'C':
                 if (strEQ(name + 7, "CHOWN"))
@@ -121,8 +134,14 @@ static int constant(pTHX_ char *name)
                     return RPMERR_CREATE;
                 break;
               case 'D':
+                if (strEQ(name + 7, "DATATYPE"))
+                    return RPMERR_DATATYPE;
+                if (strEQ(name + 7, "DBCONFIG"))
+                    return RPMERR_DBCONFIG;
                 if (strEQ(name + 7, "DBCORRUPT"))
                     return RPMERR_DBCORRUPT;
+                if (strEQ(name + 7, "DBERR"))
+                    return RPMERR_DBERR;
                 if (strEQ(name + 7, "DBGETINDEX"))
                     return RPMERR_DBGETINDEX;
                 if (strEQ(name + 7, "DBOPEN"))
@@ -141,6 +160,14 @@ static int constant(pTHX_ char *name)
                     return RPMERR_FLOCK;
                 if (strEQ(name + 7, "FORK"))
                     return RPMERR_FORK;
+                if (strEQ(name + 7, "FREAD"))
+                    return RPMERR_FREAD;
+                if (strEQ(name + 7, "FREELIST"))
+                    return RPMERR_FREELIST;
+                if (strEQ(name + 7, "FSEEK"))
+                    return RPMERR_FSEEK;
+                if (strEQ(name + 7, "FWRITE"))
+                    return RPMERR_FWRITE;
                 break;
               case 'G':
                 if (strEQ(name + 7, "GDBMOPEN"))
@@ -153,6 +180,10 @@ static int constant(pTHX_ char *name)
                     return RPMERR_GZIP;
                 break;
               case 'I':
+#if RPM_VERSION >= 0x040100
+                if (strEQ(name + 7, "IMPORT"))
+                    return RPMERR_IMPORT;
+#endif
                 if (strEQ(name + 7, "INTERNAL"))
                     return RPMERR_INTERNAL;
                 break;
@@ -161,6 +192,10 @@ static int constant(pTHX_ char *name)
                     return RPMERR_LDD;
                 break;
               case 'M':
+                if (strEQ(name + 7, "MAKETEMP"))
+                    return RPMERR_MAKETEMP;
+                if (strEQ(name + 7, "MANIFEST"))
+                    return RPMERR_MANIFEST;
                 if (strEQ(name + 7, "MKDIR"))
                     return RPMERR_MKDIR;
                 if (strEQ(name + 7, "MTAB"))
@@ -179,6 +214,8 @@ static int constant(pTHX_ char *name)
                     return RPMERR_NOSPACE;
                 if (strEQ(name + 7, "NOSPEC"))
                     return RPMERR_NOSPEC;
+                if (strEQ(name + 7, "NOTREG"))
+                    return RPMERR_NOTREG;
                 if (strEQ(name + 7, "NOTSRPM"))
                     return RPMERR_NOTSRPM;
                 if (strEQ(name + 7, "NOUSER"))
@@ -193,14 +230,34 @@ static int constant(pTHX_ char *name)
                     return RPMERR_OLDDBMISSING;
                 if (strEQ(name + 7, "OLDPACKAGE"))
                     return RPMERR_OLDPACKAGE;
+                if (strEQ(name + 7, "OPEN"))
+                    return RPMERR_OPEN;
                 break;
               case 'P':
                 if (strEQ(name + 7, "PKGINSTALLED"))
                     return RPMERR_PKGINSTALLED;
+                if (strEQ(name + 7, "POPEN"))
+                    return RPMERR_POPEN;
+                break;
+              case 'Q':
+                if (strEQ(name + 7, "QFMT"))
+                    return RPMERR_QFMT;
+                if (strEQ(name + 7, "QUERY"))
+                    return RPMERR_QUERY;
+                if (strEQ(name + 7, "QUERYINFO"))
+                    return RPMERR_QUERYINFO;
                 break;
               case 'R':
                 if (strEQ(name + 7, "READ") || strEQ(name + 7, "READERROR"))
                     return RPMERR_READ;
+                if (strEQ(name + 7, "READLEAD"))
+                    return RPMERR_READLEAD;
+                if (strEQ(name + 7, "REGCOMP"))
+                    return RPMERR_REGCOMP;
+                if (strEQ(name + 7, "REGEXEC"))
+                    return RPMERR_REGEXEC;
+                if (strEQ(name + 7, "RELOAD"))
+                    return RPMERR_RELOAD;
                 if (strEQ(name + 7, "RENAME"))
                     return RPMERR_RENAME;
                 if (strEQ(name + 7, "RMDIR"))
@@ -213,6 +270,8 @@ static int constant(pTHX_ char *name)
                     return RPMERR_SCRIPT;
                 if (strEQ(name + 7, "SIGGEN"))
                     return RPMERR_SIGGEN;
+                if (strEQ(name + 7, "SIGVFY"))
+                    return RPMERR_SIGVFY;
                 if (strEQ(name + 7, "STAT"))
                     return RPMERR_STAT;
                 break;
@@ -226,6 +285,9 @@ static int constant(pTHX_ char *name)
                 if (strEQ(name + 7, "UNMATCHEDIF"))
                     return RPMERR_UNMATCHEDIF;
                 break;
+              case 'W':
+                if (strEQ(name + 7, "WRITELEAD"))
+                    return RPMERR_WRITELEAD;
               default:
                 break;
             }
@@ -236,16 +298,26 @@ static int constant(pTHX_ char *name)
                 return RPMFILE_CONFIG;
             if (strEQ(name + 8, "DOC"))
                 return RPMFILE_DOC;
+#if RPM_VERSION < 0x040100
             if (strEQ(name + 8, "DONOTUSE"))
                 return RPMFILE_DONOTUSE;
+#endif
             if (strEQ(name + 8, "GHOST"))
                 return RPMFILE_GHOST;
+#if RPM_VERSION >= 0x040100
+            if (strEQ(name + 8, "ICON"))
+                return RPMFILE_ICON;
+#endif
             if (strEQ(name + 8, "LICENSE"))
                 return RPMFILE_LICENSE;
             if (strEQ(name + 8, "MISSINGOK"))
                 return RPMFILE_MISSINGOK;
             if (strEQ(name + 8, "NOREPLACE"))
                 return RPMFILE_NOREPLACE;
+#if RPM_VERSION >= 0x040100
+            if (strEQ(name + 8, "PUBKEY"))
+                return RPMFILE_PUBKEY;
+#endif
             if (strEQ(name + 8, "README"))
                 return RPMFILE_README;
             if (strEQ(name + 8, "SPECFILE"))
@@ -258,9 +330,15 @@ static int constant(pTHX_ char *name)
                 return RPMFILE_STATE_NOTINSTALLED;
             if (strEQ(name + 8, "STATE_REPLACED"))
                 return RPMFILE_STATE_REPLACED;
+#if RPM_VERSION >= 0x040100
+            if (strEQ(name + 8, "STATE_WRONGCOLOR"))
+                return RPMFILE_STATE_WRONGCOLOR;
+#endif
         }
         if (strnEQ(name, "RPMPROB_FILTER_", 15))
         {
+            if (strEQ(name + 15, "DISKNODES"))
+                return RPMPROB_FILTER_DISKNODES;
             if (strEQ(name + 15, "DISKSPACE"))
                 return RPMPROB_FILTER_DISKSPACE;
             if (strEQ(name + 15, "FORCERELOCATE"))
@@ -278,14 +356,49 @@ static int constant(pTHX_ char *name)
             if (strEQ(name + 15, "REPLACEPKG"))
                 return RPMPROB_FILTER_REPLACEPKG;
         }
+        if (strnEQ(name, "RPMRC_", 6))
+        {
+#if RPM_VERSION < 0x040100
+            if (strEQ(name + 6, "BADMAGIC"))
+                return RPMRC_BADMAGIC;
+            if (strEQ(name + 6, "BADSIZE"))
+                return RPMRC_BADSIZE;
+#endif
+            if (strEQ(name + 6, "FAIL"))
+                return RPMRC_FAIL;
+#if RPM_VERSION >= 0x040100
+            if (strEQ(name + 6, "NOKEY"))
+                return RPMRC_NOKEY;
+            if (strEQ(name + 6, "NOTFOUND"))
+                return RPMRC_NOTFOUND;
+            if (strEQ(name + 6, "NOTTRUSTED"))
+                return RPMRC_NOTTRUSTED;
+#endif
+            if (strEQ(name + 6, "OK"))
+                return RPMRC_OK;
+#if RPM_VERSION < 0x040100
+            if (strEQ(name + 6, "SHORTREAD"))
+                return RPMRC_SHORTREAD;
+#endif
+        }
         if (strnEQ(name, "RPMSENSE_", 9))
         {
+            if (strEQ(name + 9, "CONFLICTS"))
+                return RPMSENSE_CONFLICTS;
             if (strEQ(name + 9, "EQUAL"))
                 return RPMSENSE_EQUAL;
+            if (strEQ(name + 9, "FIND_PROVIDES"))
+                return RPMSENSE_FIND_PROVIDES;
+            if (strEQ(name + 9, "FIND_REQUIRES"))
+                return RPMSENSE_FIND_REQUIRES;
             if (strEQ(name + 9, "GREATER"))
                 return RPMSENSE_GREATER;
+            if (strEQ(name + 9, "INTERP"))
+                return RPMSENSE_INTERP;
             if (strEQ(name + 9, "LESS"))
                 return RPMSENSE_LESS;
+            if (strEQ(name + 9, "OBSOLETES"))
+                return RPMSENSE_OBSOLETES;
             if (strEQ(name + 9, "PREREQ"))
                 return RPMSENSE_PREREQ;
             if (strEQ(name + 9, "SENSEMASK"))
@@ -301,6 +414,12 @@ static int constant(pTHX_ char *name)
         }
         if (strnEQ(name, "RPMSIGTAG_", 10))
         {
+            if (strEQ(name + 10, "BADSHA1_1"))
+                return RPMSIGTAG_BADSHA1_1;
+            if (strEQ(name + 10, "BADSHA1_2"))
+                return RPMSIGTAG_BADSHA1_2;
+            if (strEQ(name + 10, "DSA"))
+                return RPMSIGTAG_DSA;
             if (strEQ(name + 10, "GPG"))
                 return RPMSIGTAG_GPG;
             if (strEQ(name + 10, "LEMD5_1"))
@@ -309,13 +428,20 @@ static int constant(pTHX_ char *name)
                 return RPMSIGTAG_LEMD5_2;
             if (strEQ(name + 10, "MD5"))
                 return RPMSIGTAG_MD5;
+            if (strEQ(name + 10, "PAYLOADSIZE"))
+                return RPMSIGTAG_PAYLOADSIZE;
             if (strEQ(name + 10, "PGP"))
                 return RPMSIGTAG_PGP;
             if (strEQ(name + 10, "PGP5"))
                 return RPMSIGTAG_PGP5;
+            if (strEQ(name + 10, "RSA"))
+                return RPMSIGTAG_RSA;
+            if (strEQ(name + 10, "SHA1"))
+                return RPMSIGTAG_SHA1;
             if (strEQ(name + 10, "SIZE"))
                 return RPMSIGTAG_SIZE;
         }
+#if RPM_VERSION < 0x040100
         if (strnEQ(name, "RPMSIG_", 7))
         {
             if (strEQ(name + 7, "BAD"))
@@ -329,6 +455,7 @@ static int constant(pTHX_ char *name)
             if (strEQ(name + 7, "UNKNOWN"))
                 return RPMSIG_UNKNOWN;
         }
+#endif
         if (strnEQ(name, "RPMTAG_", 7))
         {
             switch (*(name + 7))
@@ -380,8 +507,12 @@ static int constant(pTHX_ char *name)
                     return RPMTAG_DIRNAMES;
                 if (strEQ(name + 7, "DISTRIBUTION"))
                     return RPMTAG_DISTRIBUTION;
+                if (strEQ(name + 7, "DISTURL"))
+                    return RPMTAG_DISTURL;
                 break;
               case 'E':
+                if (strEQ(name + 7, "EPOCH"))
+                    return RPMTAG_EPOCH;
                 if (strEQ(name + 7, "EXCLUDEARCH"))
                     return RPMTAG_EXCLUDEARCH;
                 if (strEQ(name + 7, "EXCLUDEOS"))
@@ -392,6 +523,14 @@ static int constant(pTHX_ char *name)
                     return RPMTAG_EXCLUSIVEOS;
                 break;
               case 'F':
+                if (strEQ(name + 7, "FILECLASS"))
+                    return RPMTAG_FILECLASS;
+                if (strEQ(name + 7, "FILECOLORS"))
+                    return RPMTAG_FILECOLORS;
+                if (strEQ(name + 7, "FILEDEPENDSN"))
+                    return RPMTAG_FILEDEPENDSN;
+                if (strEQ(name + 7, "FILEDEPENDSX"))
+                    return RPMTAG_FILEDEPENDSX;
                 if (strEQ(name + 7, "FILEDEVICES"))
                     return RPMTAG_FILEDEVICES;
                 if (strEQ(name + 7, "FILEFLAGS"))
@@ -430,6 +569,14 @@ static int constant(pTHX_ char *name)
               case 'I':
                 if (strEQ(name + 7, "ICON"))
                     return RPMTAG_ICON;
+#if RPM_VERSION >= 0x040100
+                if (strEQ(name + 7, "INSTALLCOLOR"))
+                    return RPMTAG_INSTALLCOLOR;
+#endif
+                if (strEQ(name + 7, "INSTALLPREFIX"))
+                    return RPMTAG_INSTALLPREFIX;
+                if (strEQ(name + 7, "INSTALLTID"))
+                    return RPMTAG_INSTALLTID;
                 if (strEQ(name + 7, "INSTALLTIME"))
                     return RPMTAG_INSTALLTIME;
                 if (strEQ(name + 7, "INSTPREFIXES"))
@@ -454,6 +601,8 @@ static int constant(pTHX_ char *name)
                     return RPMTAG_OBSOLETENAME;
                 if (strEQ(name + 7, "OBSOLETEVERSION"))
                     return RPMTAG_OBSOLETEVERSION;
+                if (strEQ(name + 7, "OPTFLAGS"))
+                    return RPMTAG_OPTFLAGS;
                 if (strEQ(name + 7, "OS"))
                     return RPMTAG_OS;
                 break;
@@ -462,6 +611,14 @@ static int constant(pTHX_ char *name)
                     return RPMTAG_PACKAGER;
                 if (strEQ(name + 7, "PATCH"))
                     return RPMTAG_PATCH;
+                if (strEQ(name + 7, "PAYLOADCOMPRESSOR"))
+                    return RPMTAG_PAYLOADCOMPRESSOR;
+                if (strEQ(name + 7, "PAYLOADFLAGS"))
+                    return RPMTAG_PAYLOADFLAGS;
+                if (strEQ(name + 7, "PAYLOADFORMAT"))
+                    return RPMTAG_PAYLOADFORMAT;
+                if (strEQ(name + 7, "PLATFORM"))
+                    return RPMTAG_PLATFORM;
                 if (strEQ(name + 7, "POSTIN"))
                     return RPMTAG_POSTIN;
                 if (strEQ(name + 7, "POSTINPROG"))
@@ -555,12 +712,34 @@ static int constant(pTHX_ char *name)
                 return RPMTRANS_FLAG_JUSTDB;
             if (strEQ(name + 14, "KEEPOBSOLETE"))
                 return RPMTRANS_FLAG_KEEPOBSOLETE;
+#if RPM_VERSION >= 0x040100
+            if (strEQ(name + 14, "NOCONFIGS"))
+                return RPMTRANS_FLAG_NOCONFIGS;
+#endif
             if (strEQ(name + 14, "NODOCS"))
                 return RPMTRANS_FLAG_NODOCS;
+            if (strEQ(name + 14, "NOMD5"))
+                return RPMTRANS_FLAG_NOMD5;
+            if (strEQ(name + 14, "NOPOST"))
+                return RPMTRANS_FLAG_NOPOST;
+            if (strEQ(name + 14, "NOPOSTUN"))
+                return RPMTRANS_FLAG_NOPOSTUN;
+            if (strEQ(name + 14, "NOPRE"))
+                return RPMTRANS_FLAG_NOPRE;
+            if (strEQ(name + 14, "NOPREUN"))
+                return RPMTRANS_FLAG_NOPREUN;
             if (strEQ(name + 14, "NOSCRIPTS"))
                 return RPMTRANS_FLAG_NOSCRIPTS;
+            if (strEQ(name + 14, "NOTRIGGERIN"))
+                return RPMTRANS_FLAG_NOTRIGGERIN;
+            if (strEQ(name + 14, "NOTRIGGERPOSTUN"))
+                return RPMTRANS_FLAG_NOTRIGGERPOSTUN;
+            if (strEQ(name + 14, "NOTRIGGERPREIN"))
+                return RPMTRANS_FLAG_NOTRIGGERPREIN;
             if (strEQ(name + 14, "NOTRIGGERS"))
                 return RPMTRANS_FLAG_NOTRIGGERS;
+            if (strEQ(name + 14, "NOTRIGGERUN"))
+                return RPMTRANS_FLAG_NOTRIGGERUN;
             if (strEQ(name + 14, "TEST"))
                 return RPMTRANS_FLAG_TEST;
         }
@@ -618,12 +797,36 @@ static int constant(pTHX_ char *name)
         {
             if (strEQ(name + 7, "DEPS"))
                 return VERIFY_DEPS;
+            if (strEQ(name + 7, "DIGEST"))
+                return VERIFY_DIGEST;
             if (strEQ(name + 7, "FILES"))
                 return VERIFY_FILES;
+            if (strEQ(name + 7, "GROUP"))
+                return VERIFY_GROUP;
+#if RPM_VERSION >= 0x040100
+            if (strEQ(name + 7, "HDRCHK"))
+                return VERIFY_HDRCHK;
+#endif
+            if (strEQ(name + 7, "LINKTO"))
+                return VERIFY_LINKTO;
             if (strEQ(name + 7, "MD5"))
                 return VERIFY_MD5;
+            if (strEQ(name + 7, "MODE"))
+                return VERIFY_MODE;
+            if (strEQ(name + 7, "MTIME"))
+                return VERIFY_MTIME;
+            if (strEQ(name + 7, "RDEV"))
+                return VERIFY_RDEV;
             if (strEQ(name + 7, "SCRIPT"))
                 return VERIFY_SCRIPT;
+#if RPM_VERSION >= 0x040100
+            if (strEQ(name + 7, "SIGNATURE"))
+                return VERIFY_SIGNATURE;
+#endif
+            if (strEQ(name + 7, "SIZE"))
+                return VERIFY_SIZE;
+            if (strEQ(name + 7, "USER"))
+                return VERIFY_USER;
         }
         break;
       default:
@@ -639,7 +842,7 @@ MODULE = RPM::Constants PACKAGE = RPM::Constants
 
 int
 constant(name)
-    char* name;
+    const char *name;
     PROTOTYPE: $
     CODE:
     RETVAL = constant(aTHX_ name);

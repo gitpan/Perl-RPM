@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use vars qw($USAGE $VERSION $revision $cmd %opts $file $hdr $installed $ret);
+use vars qw($USAGE $cmd %opts $file $hdr $installed $ret);
 
 use Getopt::Long;
 use File::Basename qw(basename);
@@ -10,8 +10,6 @@ use RPM::Database qw(%RPM);
 use RPM::Header;
 
 $cmd = basename $0;
-$revision = q$Revision: 1.1 $;
-$VERSION = sprintf("%d.%02d", $revision =~ /(\d+)\.(\d+)/);
 $USAGE = "USAGE:
     $cmd [ --newer ] [ --older ] [ --equal ] [ --uninst ]
         [ --invert ] file [ file ... ]

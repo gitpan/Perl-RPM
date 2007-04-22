@@ -1,6 +1,4 @@
 /*
- * $Id: RPM.h,v 1.19 2002/05/10 05:50:19 rjray Exp $
- *
  * Various C-specific decls/includes/etc. for the RPM linkage
  */
 
@@ -39,9 +37,16 @@
 #ifndef newSVpvn
 #    define newSVpvn(a,b)       newSVpv(a,b)
 #endif
+#ifndef newSVpvn_share
+#    define newSVpvn_share(s,len,hash)	newSVpvn(s,len)
+#endif
+#ifndef SvPV_nolen
+#    define SvPV_nolen(s)	SvPV(s, PL_na)
+#endif
 
 #include <rpmcli.h>
 #include <rpmlib.h>
+#include <rpmdb.h>
 
 /* Various flags. For now, one nybble for header and one for package. */
 #define RPM_HEADER_MASK        0x0f
@@ -52,27 +57,6 @@
 #define RPM_PACKAGE_READONLY   0x0100
 #define RPM_PACKAGE_NOREAD     0x0200
 
-/*
-  Use this define for deriving the saved underlying struct, rather than coding
-  it a dozen places.
-*/
-#define struct_from_object_ret(type, header, object, err_ret) \
-    { \
-        MAGIC* mg = mg_find((SV *)(object), '~'); \
-        if (mg) \
-            (header) = (type *)SvIV(mg->mg_obj); \
-        else \
-            return (err_ret); \
-    }
-/* And a no-return version: */
-#define struct_from_object(type, header, object) \
-    { \
-        MAGIC* mg = mg_find((SV *)(object), '~'); \
-        if (mg) \
-            (header) = (type *)SvIV(mg->mg_obj); \
-        else \
-            (header) = Null(type *); \
-    }
 
 /*
  *    Perl complement: RPM::Database
@@ -85,15 +69,10 @@
 
 typedef struct {
     rpmdb dbp;
-    int current_rec;
-    int noffs;
-    int offx;
-    int* offsets;
-    /* This HV will be used to cache key/value pairs to avoid re-computing */
-    HV* storage;
+    rpmdbMatchIterator iterator;
 } RPM_Database;
 
-typedef HV* RPM__Database;
+typedef RPM_Database * RPM__Database;
 
 
 /*
@@ -113,48 +92,14 @@ typedef struct {
     const char* release;
     /* These are set by rpmReadPackageHeader when applicable */
     int isSource;   /* If this header is for a source RPM (SRPM) */
-    int major;      /* Major and minor rev numbers of package's format */
-    int minor;
-    /* This HV will be used to cache key/value pairs to avoid re-computing */
-    HV* storage;
     /* Keep a per-header iterator for things like FIRSTKEY and NEXTKEY */
     HeaderIterator iterator;
-    int read_only;
     /* Since we close the files after reading, store the filename here in case
        we have to re-open it later */
     char* source_name;
 } RPM_Header;
 
-typedef HV* RPM__Header;
-
-
-/*
- *    Perl complement: RPM::Package
- */
-
-/*
-  This is the underlying struct that implements the interface to the RPM
-  packages. As above, we need the actual object to be a hash, so the struct
-  will be stored as an SV on the same sort of special key as RPM__Database and
-  RPM__Header use.
-*/
-
-typedef struct {
-    /* The filepath, ftp path or URI that refers to the package */
-    char* path;
-    /* A weak ref to the header structure for the package, if it exists */
-    RPM__Header header;
-    /* The RPM signature (if present) is stored in the same struct as hdrs */
-    Header signature;
-    /* Should this be treated as a read-only source? */
-    int readonly;
-    /* The current notify/callback function associated with this package */
-    CV* callback;
-    /* Any data they want to have passed to the callback */
-    SV* cb_data;
-} RPM_Package;
-
-typedef RPM_Package* RPM__Package;
+typedef RPM_Header * RPM__Header;
 
 
 /*
@@ -162,39 +107,47 @@ typedef RPM_Package* RPM__Package;
   their native modules.
 */
 /* RPM.xs: */
-extern int tag2num(pTHX_ const char *);
-extern const char* num2tag(pTHX_ int);
+extern void *rpm_hvref2ptr(pTHX_ SV *, const char *);
+extern SV *rpm_ptr2hvref(pTHX_ void *, const char *);
+
+typedef int RPM_Tag;
+extern int rpmtag_pv2iv(pTHX_ const char *name);
+extern const char *rpmtag_iv2pv(pTHX_ int tag);
+extern SV *rpmtag_iv2sv(pTHX_ int tag);
+extern int rpmtag_sv2iv(pTHX_ SV *sv);
 
 /* RPM/Error.xs: */
 extern SV* rpm_errSV;
-extern void clear_errors(pTHX);
-extern SV* set_error_callback(pTHX_ SV *);
-extern void rpm_error(pTHX_ int, const char *);
 
 /* RPM/Header.xs: */
 extern const char* sv2key(pTHX_ SV *);
-extern RPM__Header rpmhdr_TIEHASH(pTHX_ char *, SV *, int);
-extern SV* rpmhdr_FETCH(pTHX_ RPM__Header, SV *, const char *, int, int);
-extern int rpmhdr_STORE(pTHX_ RPM__Header, SV *, SV *);
-extern int rpmhdr_DELETE(pTHX_ RPM__Header, SV *);
-extern bool rpmhdr_EXISTS(pTHX_ RPM__Header, SV *);
+extern RPM__Header rpmhdr_TIEHASH_header(pTHX_ const Header);
+extern RPM__Header rpmhdr_TIEHASH_new(pTHX);
+extern RPM__Header rpmhdr_TIEHASH_FD(pTHX_ const FD_t);
+extern RPM__Header rpmhdr_TIEHASH_fd(pTHX_ const int);
+extern RPM__Header rpmhdr_TIEHASH_file(pTHX_ const char *);
+extern SV* rpmhdr_FETCH(pTHX_ RPM__Header, RPM_Tag);
+void rpmhdr_DESTROY(pTHX_ RPM__Header hdr);
+void rpmhdr_CLEAR(pTHX_ RPM__Header hdr);
+extern int rpmhdr_STORE(pTHX_ RPM__Header, RPM_Tag, SV *);
+extern int rpmhdr_DELETE(pTHX_ RPM__Header, RPM_Tag);
+extern bool rpmhdr_EXISTS(pTHX_ RPM__Header, RPM_Tag);
+extern int rpmhdr_FIRSTKEY(pTHX_ RPM__Header hdr,
+                            RPM_Tag *tagp, SV **valuep);
+extern int rpmhdr_NEXTKEY(pTHX_ RPM__Header hdr, RPM_Tag prev_tag,
+                            RPM_Tag *tagp, SV **valuep);
 extern unsigned int rpmhdr_size(pTHX_ RPM__Header);
-extern int rpmhdr_tagtype(pTHX_ RPM__Header, SV *);
+extern int rpmhdr_tagtype(pTHX_ RPM__Header, RPM_Tag);
 extern int rpmhdr_write(pTHX_ RPM__Header, SV *, int);
-extern int rpmhdr_is_source(pTHX_ RPM__Header);
 extern int rpmhdr_cmpver(pTHX_ RPM__Header, RPM__Header);
-extern int rpmhdr_scalar_tag(pTHX_ SV*, int);
 
 /* RPM/Database.xs: */
 extern RPM__Database rpmdb_TIEHASH(pTHX_ char *, SV *);
-extern SV* rpmdb_FETCH(pTHX_ RPM__Database, SV *);
-extern bool rpmdb_EXISTS(pTHX_ RPM__Database, SV *);
-
-/* RPM/Package.xs: */
-extern RPM__Package rpmpkg_new(pTHX_ char *, SV *, int);
-extern SV* rpmpkg_set_callback(pTHX_ RPM__Package, SV *);
-extern int rpmpkg_is_source(pTHX_ RPM__Package);
-extern int rpmpkg_cmpver_pkg(pTHX_ RPM__Package, RPM__Package);
-extern int rpmpkg_cmpver_hdr(pTHX_ RPM__Package, RPM__Header);
+extern RPM__Header rpmdb_FETCH(pTHX_ RPM__Database dbstruct, const char *name);
+extern bool rpmdb_EXISTS(pTHX_ RPM__Database dbstruct, const char *name);
+extern int rpmdb_FIRSTKEY(pTHX_ RPM__Database db,
+                            const char **namep, RPM__Header *hdrp);
+extern int rpmdb_NEXTKEY(pTHX_ RPM__Database db, const char *prev_name,
+                            const char **namep, RPM__Header *hdrp);
 
 #endif /* H_RPM_XS_HDR */

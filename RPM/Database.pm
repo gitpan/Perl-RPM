@@ -1,11 +1,10 @@
 ###############################################################################
 #
-#   (c) Copyright @ 2000, Randy J. Ray <rjray@blackperl.com>
-#               All Rights Reserved
+#   Copyright (c) 2000, 2001, 2002  Randy J. Ray <rjray@blackperl.com>
+#             (c) 2006, 2007  Alexey Tourbin <at@altlinux.org>
+#   All Rights Reserved
 #
 ###############################################################################
-#
-#   $Id: Database.pm,v 1.18 2002/05/10 07:38:58 rjray Exp $
 #
 #   Description:    The RPM::Database class provides access to the RPM database
 #                   as a tied hash, whose keys are taken as the names of
@@ -32,10 +31,8 @@ use strict;
 use vars qw($VERSION %RPM $RPM);
 use subs qw(new import);
 
-require RPM;
+require RPM; $VERSION = $RPM::VERSION;
 require RPM::Header;
-
-$VERSION = do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf "%d."."%02d"x$#r,@r };
 
 1;
 
@@ -258,8 +255,9 @@ subject to change in future releases.
 
 L<RPM>, L<RPM::Header>, L<perl>, L<rpm>
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Randy J. Ray <rjray@blackperl.com>
+Randy J. Ray <rjray@blackperl.com>,
+Alexey Tourbin <at@altlinux.org>.
 
 =cut

@@ -20,4 +20,6 @@ t/01_database.t
 t/02_headers.t
 t/03_errors.t
 t/04_utils.t
+t/09_leaks.t
 utils/rpmprune		Sample script
+META.yml                                 Module meta-data (added by MakeMaker)

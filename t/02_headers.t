@@ -3,7 +3,7 @@
 use RPM::Header;
 use RPM::Database;
 
-print "1..18\n";
+print "1..21\n";
 $count = 1;
 
 tie %DB, "RPM::Database" or die "$RPM::err";
@@ -11,7 +11,7 @@ tie %DB, "RPM::Database" or die "$RPM::err";
 #
 # Find a package to use for package existence and data integrity testing.
 #
-for (qw(rpm kernel inetd bash))
+for (qw(bash grep rpm))
 {
     $test_pack = $_, last if (exists $DB{$_});
 }
@@ -110,6 +110,7 @@ print "not " if (RPM::Header->scalar_tag(RPMTAG_DIRNAMES));
 print "ok $count\n"; $count++;
 
 use RPM::Constants ':rpmerr';
+warn "Warning is normal here:\n";
 print "not " unless ((! RPM::Header->scalar_tag(q{not_a_tag})) and
                      ($RPM::err == RPMERR_BADARG));
 print "ok $count\n"; $count++;
@@ -131,6 +132,18 @@ untie %DB;
 # Test an attempt to open a non-existant RPM file
 $hdr = new RPM::Header "this_file_not_here.rpm";
 print "not " if $hdr;
+print "ok $count\n"; $count++;
+
+$hdr = new RPM::Header;
+$$hdr{name} = "asdf";
+print "not " if "@{[keys %$hdr]}" !~ /^N(AME)?$/;
+print "ok $count\n"; $count++;
+print "not " if "@{[values %$hdr]}" ne "asdf";
+print "ok $count\n"; $count++;
+
+# this used to segfault
+$hdr = new RPM::Header;
+print "not " if $hdr->{VERSION};
 print "ok $count\n"; $count++;
 
 exit 0;

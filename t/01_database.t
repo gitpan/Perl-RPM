@@ -17,7 +17,7 @@ $all_packs{$_}++ for (@all_packs);
 # With a full list of packages now known, find one to use for package existence
 # testing.
 #
-for (qw(kernel rpm inetd bash))
+for (qw(bash grep rpm))
 {
     $test_pack = $_, last if (exists $all_packs{$_});
 }

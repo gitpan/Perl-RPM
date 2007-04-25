@@ -1,6 +1,6 @@
 ###############################################################################
 #
-#   Copyright (c) 2000, 2001, 2002  Randy J. Ray <rjray@blackperl.com>
+#   Copyright (c) 2000, 2001, 2002, 2007  Randy J. Ray <rjray@blackperl.com>
 #             (c) 2006, 2007  Alexey Tourbin <at@altlinux.org>
 #   All Rights Reserved
 #
@@ -31,8 +31,10 @@ use strict;
 use vars qw($VERSION %RPM $RPM);
 use subs qw(new import);
 
-require RPM; $VERSION = $RPM::VERSION;
+require RPM;
 require RPM::Header;
+
+$VERSION = '1.19';
 
 1;
 

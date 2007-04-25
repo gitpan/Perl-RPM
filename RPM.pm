@@ -10,7 +10,7 @@ require DynaLoader;
 require Exporter;
 
 @ISA = qw(Exporter DynaLoader);
-$VERSION = '1.50';
+$VERSION = '1.51';
 
 @EXPORT = qw(rpm_osname rpm_archname rpm_version);
 @EXPORT_OK = (@EXPORT, 'vercmp', 'evrcmp');

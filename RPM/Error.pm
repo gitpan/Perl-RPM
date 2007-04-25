@@ -1,6 +1,6 @@
 ###############################################################################
 #
-#   Copyright (c) 2000, 2001, 2002  Randy J. Ray <rjray@blackperl.com>
+#   Copyright (c) 2000, 2001, 2002, 2007  Randy J. Ray <rjray@blackperl.com>
 #             (c) 2006, 2007  Alexey Tourbin <at@altlinux.org>
 #   All Rights Reserved
 #
@@ -31,7 +31,9 @@ use vars qw(@ISA $VERSION @EXPORT @EXPORT_OK);
 require Exporter;
 @ISA = qw(Exporter);
 
-require RPM; $VERSION = $RPM::VERSION;
+require RPM;
+
+$VERSION = '1.11';
 
 @EXPORT = qw(clear_errors set_error_callback rpm_error);
 @EXPORT_OK = @EXPORT;

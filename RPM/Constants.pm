@@ -1,6 +1,6 @@
 ###############################################################################
 #
-#   Copyright (c) 2000, 2001, 2002  Randy J. Ray <rjray@blackperl.com>
+#   Copyright (c) 2000, 2001, 2002, 2007  Randy J. Ray <rjray@blackperl.com>
 #             (c) 2006, 2007  Alexey Tourbin <at@altlinux.org>
 #   All Rights Reserved
 #
@@ -22,7 +22,9 @@ use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $AUTOLOAD);
 require Exporter;
 @ISA = qw(Exporter);
 
-require RPM; $VERSION = $RPM::VERSION;
+require RPM;
+
+$VERSION = '1.19';
 
 @EXPORT_OK = qw(
                 INSTALL_ERASE

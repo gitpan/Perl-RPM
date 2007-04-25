@@ -1,6 +1,12 @@
 Revision history for Perl extension RPM.
 
-1.50
+1.51	Tue Apr 24 18:45:49 PDT 2007
+
+	Changes made by Alexey to setting of $VERSION in RPM::* classes
+	didn't play well with CPAN. Since I'm moving the repo to subversion
+	soon anyway, changed these to ordinary strings.
+
+1.50	Tue Apr 24 17:42:49 PDT 2007
 
 	This is an official release to make the work done by Alexey Tourbin
 	(<at@altlinux.org>) available in the main branch. All of his changes

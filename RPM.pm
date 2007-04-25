@@ -2,14 +2,15 @@ package RPM;
 
 use 5.005;
 use strict;
-use subs qw(bootstrap_Constants bootstrap_Header bootstrap_Database);
+use subs qw(bootstrap_Constants bootstrap_Header bootstrap_Database
+            bootstrap_Error);
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
 
 require DynaLoader;
 require Exporter;
 
 @ISA = qw(Exporter DynaLoader);
-$VERSION = '1.49_01';
+$VERSION = '1.50';
 
 @EXPORT = qw(rpm_osname rpm_archname rpm_version);
 @EXPORT_OK = (@EXPORT, 'vercmp', 'evrcmp');
@@ -125,6 +126,11 @@ As above, but returns the architecture string instead. Again, this may not
 directly match the running system, but rather is the value that B<rpm> is
 using. B<rpm> will use the lowest-matching architecture whenever possible,
 for maximum cross-platform compatibility.
+
+=item rpm_version
+
+Returns the current version of RPM that the library is linked against. The
+value is a string of the form C<X.Y.Z>.
 
 =back
 

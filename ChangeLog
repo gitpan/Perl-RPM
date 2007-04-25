@@ -1,8 +1,24 @@
 Revision history for Perl extension RPM.
 
-1.49_01	Sun Apr 22 2007
+1.50
 
-	Maintenance taken over by Alexey Tourbin <at@altlinux.org>.
+	This is an official release to make the work done by Alexey Tourbin
+	(<at@altlinux.org>) available in the main branch. All of his changes
+	are merged into the main repository. Without his work, the project
+	would still be languishing. Beside fixing countless bugs, he got me
+	back to actively looking at the code.
+
+	Added LICENSE paramter in Makefile.PL to re-license the package under
+	the same terms as Perl itself (dual Artistic/GPL).
+
+	RPM.pm version bumped up to 1.50 for release tracking.
+
+	Test suites added to t/ for POD correctness and POD coverage.
+
+	Several new additions to POD as deficiencies found by the POD
+	coverage testing.
+
+1.49_01	Sun Apr 22 2007
 
 	This release has been tested on ALT Linux Sisyphus (rpm-4.0.4) and
 	Fedora Core 6 (rpm-4.4.2).

@@ -139,12 +139,28 @@ An object may be created one of two ways:
 
     tie %h, "RPM::Header", "filename";
 
-    $href = new RPM::Header "filename";
+    $href = RPM::Header->new("filename");
 
 The latter approach offers more direct access to the class methods, while
 also permitting the usual tied-hash operations such as fetching:
 
     $href->{tag}    # Such as "name" or "version"
+
+=head2 Constructor
+
+Besides using B<tie> to create an object of this class, the user may
+explicitly create one:
+
+=over
+
+=item new(FILENAME)
+
+Create a new B<RPM::Header> object from the RPM header block in the given
+file or file-handle. If it fails to open the file, or if the data does not
+conform to a RPM header structure, no new object will be returned and
+B<$RPM::err> is set to an error message.
+
+=back
 
 =head2 Class Methods
 

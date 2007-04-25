@@ -1,6 +1,7 @@
 ChangeLog		Change history
 IMPORTANT.perl		Notes regarding datbase-linkage issues in Perl
 MANIFEST		This file
+MANIFEST.SKIP
 Makefile.PL		MakeMaker file
 README			Overview
 RPM.h			C header, declarations, etc.
@@ -16,6 +17,8 @@ RPM/Header.pm		Perl code for headers
 RPM/Header.xs		C/XS code for headers
 typemap			Type-mappings for xsubpp to manage headers and database
 t/00_load.t		Test suite
+t/00_pod.t
+t/00_pod_coverage.t
 t/01_database.t
 t/02_headers.t
 t/03_errors.t

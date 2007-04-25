@@ -1,6 +1,6 @@
 Perl-RPM - Native bindings to the RPM Package Manager API for Perl
 
-Version 1.49_01
+Version 1.50
 
 
 WHAT IS IT
@@ -49,16 +49,25 @@ There is now a mailing list for Perl-RPM. For details, see:
 
 CHANGES
 
-This is the thirteenth release. For detailed changes, see the file ChangeLog.
-This release includes many patches from users, and signifies a move to cease
-support for versions of rpm prior to 4.0.3.
+This is the fifteenth release. For detailed changes, see the file ChangeLog.
+This release puts the work done by Alexey Tourbin into the main trunk, adds
+some more test suites for the documentation, and makes fixes to the
+documentation. The 1.49_01 release made by Alexey fixed a significant number
+of issues; please see ChangeLog for the details of these.
+
+Most notably, as of this release this package is now licensed under the same
+terms as Perl itself. Notably, users may now choose to use and redistribute
+this code under their choice of either the Artistic License and/or the GNU
+GPL.
 
 
 LICENSE
 
 This package is Copyright
-        (C) 2000, 2001, 2002  Randy J. Ray <rjray@blackperl.com>,
+        (C) 2000, 2001, 2002, 2007  Randy J. Ray <rjray@blackperl.com>,
         (C) 2006, 2007  Alexey Tourbin <at@altlinux.org>.
-You may distribute this under the terms of Artistic License, as specified
-in the README file of Perl itself. Please see the file ARTISTIC in your
-distribution of Perl.
+You may distribute this under the same terms as Perl itself, under your
+choice of the Artist or GPL licenses. See:
+
+Artistic License: http://perldoc.perl.org/perlartistic.html
+GNU GPL: http://www.gnu.org/licenses/gpl.html

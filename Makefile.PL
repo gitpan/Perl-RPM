@@ -72,6 +72,7 @@ WriteMakefile(
               NAME         => 'RPM',
               DISTNAME     => 'Perl-RPM',
               VERSION_FROM => 'RPM.pm',
+              LICENSE      => 'perl',
               LIBS         => $rpm_libs,
               DEFINE       => $rpm_defines,
               PM           => \%PM,
